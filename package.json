@@ -1,0 +1,472 @@
+{
+  "name": "spec-code",
+  "displayName": "Spec-Code: Kiro-Compatible Spec-Driven AI Development",
+  "description": "Bring Kiro's agentic IDE capabilities to any VS Code installation. Spec-driven development with any AI model.",
+  "version": "1.0.0",
+  "publisher": "spec-code",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "kiro",
+    "spec-driven",
+    "claude",
+    "openai",
+    "mcp",
+    "code-generation",
+    "assistant"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "specCode.openChat",
+        "title": "Open Spec-Code Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "specCode.newSpec",
+        "title": "New Spec",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "specCode.editSpec",
+        "title": "Edit Spec",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "specCode.deleteSpec",
+        "title": "Delete Spec",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "specCode.generateRequirements",
+        "title": "Generate Requirements",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "specCode.generateDesign",
+        "title": "Generate Design",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "specCode.generateTasks",
+        "title": "Generate Implementation Plan",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "specCode.executeTasks",
+        "title": "Execute Tasks",
+        "icon": "$(play)"
+      },
+      {
+        "command": "specCode.newHook",
+        "title": "New Agent Hook",
+        "icon": "$(add)"
+      },
+      {
+        "command": "specCode.editHook",
+        "title": "Edit Hook",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "specCode.toggleHook",
+        "title": "Toggle Hook",
+        "icon": "$(check)"
+      },
+      {
+        "command": "specCode.deleteHook",
+        "title": "Delete Hook",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "specCode.newSteering",
+        "title": "New Steering Document",
+        "icon": "$(add)"
+      },
+      {
+        "command": "specCode.editSteering",
+        "title": "Edit Steering",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "specCode.addMCPServer",
+        "title": "Add MCP Server",
+        "icon": "$(add)"
+      },
+      {
+        "command": "specCode.removeMCPServer",
+        "title": "Remove MCP Server",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "specCode.refreshMCP",
+        "title": "Refresh MCP Servers",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "specCode.openSettings",
+        "title": "Open Spec-Code Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "specCode.addModel",
+        "title": "Add AI Model",
+        "icon": "$(add)"
+      },
+      {
+        "command": "specCode.testModel",
+        "title": "Test Model Connection",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "specCode.approvePhase",
+        "title": "Approve Phase",
+        "icon": "$(check)"
+      },
+      {
+        "command": "specCode.regeneratePhase",
+        "title": "Regenerate Phase",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "specCode.startTask",
+        "title": "Start Task",
+        "icon": "$(play)"
+      },
+      {
+        "command": "specCode.toggleTaskOptional",
+        "title": "Toggle Optional",
+        "icon": "$(circle-outline)"
+      },
+      {
+        "command": "specCode.approveCommand",
+        "title": "Approve Command",
+        "icon": "$(check)"
+      },
+      {
+        "command": "specCode.cancelCommand",
+        "title": "Cancel Command",
+        "icon": "$(x)"
+      },
+      {
+        "command": "specCode.trustPattern",
+        "title": "Trust This Pattern",
+        "icon": "$(shield)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "specCode",
+          "title": "Spec-Code",
+          "icon": "$(ghost)"
+        }
+      ]
+    },
+    "views": {
+      "specCode": [
+        {
+          "id": "specCode.specs",
+          "name": "Specs",
+          "icon": "$(file-text)",
+          "when": "workspaceHasKiroFolder || true"
+        },
+        {
+          "id": "specCode.hooks",
+          "name": "Agent Hooks",
+          "icon": "$(debug-disconnect)",
+          "when": "workspaceHasKiroFolder || true"
+        },
+        {
+          "id": "specCode.steering",
+          "name": "Agent Steering",
+          "icon": "$(compass)",
+          "when": "workspaceHasKiroFolder || true"
+        },
+        {
+          "id": "specCode.mcp",
+          "name": "MCP Servers",
+          "icon": "$(server)",
+          "when": "workspaceHasKiroFolder || true"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "specCode.specs",
+        "contents": "No specs yet. [New Spec](command:specCode.newSpec)"
+      },
+      {
+        "view": "specCode.hooks",
+        "contents": "No agent hooks configured. [New Hook](command:specCode.newHook)"
+      },
+      {
+        "view": "specCode.steering",
+        "contents": "No steering documents. [New Steering](command:specCode.newSteering)"
+      },
+      {
+        "view": "specCode.mcp",
+        "contents": "No MCP servers. [Add Server](command:specCode.addMCPServer)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "specCode.newSpec",
+          "when": "view == specCode.specs",
+          "group": "navigation"
+        },
+        {
+          "command": "specCode.newHook",
+          "when": "view == specCode.hooks",
+          "group": "navigation"
+        },
+        {
+          "command": "specCode.newSteering",
+          "when": "view == specCode.steering",
+          "group": "navigation"
+        },
+        {
+          "command": "specCode.addMCPServer",
+          "when": "view == specCode.mcp",
+          "group": "navigation"
+        },
+        {
+          "command": "specCode.refreshMCP",
+          "when": "view == specCode.mcp",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "specCode.editSpec",
+          "when": "view == specCode.specs && viewItem == spec",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.deleteSpec",
+          "when": "view == specCode.specs && viewItem == spec",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.generateRequirements",
+          "when": "view == specCode.specs && viewItem == spec",
+          "group": "1_actions"
+        },
+        {
+          "command": "specCode.generateDesign",
+          "when": "view == specCode.specs && viewItem == specWithRequirements",
+          "group": "1_actions"
+        },
+        {
+          "command": "specCode.generateTasks",
+          "when": "view == specCode.specs && viewItem == specWithDesign",
+          "group": "1_actions"
+        },
+        {
+          "command": "specCode.executeTasks",
+          "when": "view == specCode.specs && viewItem == specWithTasks",
+          "group": "1_actions"
+        },
+        {
+          "command": "specCode.editHook",
+          "when": "view == specCode.hooks && viewItem == hook",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.toggleHook",
+          "when": "view == specCode.hooks && viewItem == hook",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.deleteHook",
+          "when": "view == specCode.hooks && viewItem == hook",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.editSteering",
+          "when": "view == specCode.steering && viewItem == steering",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.removeMCPServer",
+          "when": "view == specCode.mcp && viewItem == mcpServer",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "specCode.openChat",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.openSettings",
+          "group": "Spec-Code"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "specCode.openChat",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Spec-Code",
+      "properties": {
+        "specCode.models": {
+          "type": "array",
+          "default": [],
+          "description": "Configured AI models",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "modelName": {
+                "type": "string"
+              },
+              "apiKey": {
+                "type": "string"
+              },
+              "baseUrl": {
+                "type": "string"
+              },
+              "temperature": {
+                "type": "number",
+                "default": 0.7
+              },
+              "maxTokens": {
+                "type": "number",
+                "default": 4096
+              },
+              "supportsTools": {
+                "type": "boolean",
+                "default": true
+              },
+              "supportsVision": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        },
+        "specCode.defaultRequirementsModel": {
+          "type": "string",
+          "default": "",
+          "description": "Default model for Requirements phase"
+        },
+        "specCode.defaultDesignModel": {
+          "type": "string",
+          "default": "",
+          "description": "Default model for Design phase"
+        },
+        "specCode.defaultExecutionModel": {
+          "type": "string",
+          "default": "",
+          "description": "Default model for Execution phase"
+        },
+        "specCode.defaultHooksModel": {
+          "type": "string",
+          "default": "",
+          "description": "Default model for Agent Hooks"
+        },
+        "specCode.enableCostTracking": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable token and cost tracking"
+        },
+        "specCode.autoApproveTrustedCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-approve commands matching trusted patterns"
+        },
+        "specCode.trustedCommandPatterns": {
+          "type": "array",
+          "default": [],
+          "description": "Regex patterns for trusted commands",
+          "items": {
+            "type": "string"
+          }
+        },
+        "specCode.enableHooks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable agent hooks"
+        },
+        "specCode.showVerificationPrompts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show verification prompts at each phase"
+        },
+        "specCode.mcpServers": {
+          "type": "object",
+          "default": {},
+          "description": "MCP server configurations"
+        },
+        "specCode.globalSteeringPath": {
+          "type": "string",
+          "default": "~/.kiro/steering",
+          "description": "Path to global steering documents"
+        }
+      }
+    },
+    "webview": {
+      "specCode.chat": {
+        "viewType": "specCode.chat",
+        "preserveFocus": true
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "openai": "^4.28.0",
+    "@google/generative-ai": "^0.21.0",
+    "axios": "^1.6.5",
+    "zod": "^3.22.4",
+    "uuid": "^9.0.1",
+    "@types/uuid": "^9.0.7"
+  }
+}

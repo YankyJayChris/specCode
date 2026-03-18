@@ -8,11 +8,15 @@ This guide covers how to use Spec-Code effectively for spec-driven AI developmen
 2. [Adding AI Models](#adding-ai-models)
 3. [Creating Specs](#creating-specs)
 4. [The 4-Phase Workflow](#the-4-phase-workflow)
-5. [Agent Hooks](#agent-hooks)
-6. [Agent Steering](#agent-steering)
-7. [MCP Servers](#mcp-servers)
-8. [Vibe Coding Mode](#vibe-coding-mode)
-9. [Tips and Best Practices](#tips-and-best-practices)
+5. [Spec Templates](#spec-templates)
+6. [Memory System](#memory-system)
+7. [Session Management](#session-management)
+8. [Agent Methods](#agent-methods)
+9. [Agent Hooks](#agent-hooks)
+10. [Agent Steering](#agent-steering)
+11. [MCP Servers](#mcp-servers)
+12. [Vibe Coding Mode](#vibe-coding-mode)
+13. [Tips and Best Practices](#tips-and-best-practices)
 
 ## Getting Started
 
@@ -25,7 +29,8 @@ This guide covers how to use Spec-Code effectively for spec-driven AI developmen
 ### First Launch
 
 On first launch, Spec-Code will:
-1. Create a `.kiro/` folder in your workspace
+
+1. Create a `.specCode/` folder in your workspace (migrates from `.kiro/` if exists)
 2. Show a welcome message with quick actions
 3. Prompt you to add an AI model
 
@@ -47,6 +52,7 @@ On first launch, Spec-Code will:
 ### Example Configurations
 
 #### OpenAI GPT-4
+
 ```json
 {
   "specCode.models": [
@@ -66,6 +72,7 @@ On first launch, Spec-Code will:
 ```
 
 #### Anthropic Claude 3.5 Sonnet
+
 ```json
 {
   "specCode.models": [
@@ -85,6 +92,7 @@ On first launch, Spec-Code will:
 ```
 
 #### Ollama (Local)
+
 ```json
 {
   "specCode.models": [
@@ -140,6 +148,7 @@ On first launch, Spec-Code will:
 **Input**: Your feature description
 
 **Output**: `requirements.md` with:
+
 - User stories (EARS format)
 - Acceptance criteria
 - In/out of scope
@@ -147,15 +156,18 @@ On first launch, Spec-Code will:
 - Assumptions and dependencies
 
 **Actions**:
+
 - Review the generated requirements
 - Click "Approve" to proceed
 - Or provide feedback to regenerate
 
 **Example**:
+
 ```markdown
 ## User Stories
 
 ### US-001: User can log in with email and password
+
 - **Priority**: Must have
 - **Acceptance Criteria**:
   1. User can enter email and password
@@ -170,6 +182,7 @@ On first launch, Spec-Code will:
 **Input**: Approved requirements
 
 **Output**: `design.md` with:
+
 - Architecture overview
 - Component breakdown
 - Data models
@@ -179,15 +192,18 @@ On first launch, Spec-Code will:
 - Technology choices
 
 **Actions**:
+
 - Review technical design
 - Override any choices (e.g., "Use Node 20 instead of 18")
 - Approve to proceed
 
 **Example**:
+
 ```markdown
 ## Architecture
 
 We'll use a layered architecture:
+
 - **API Layer**: Express.js routes
 - **Service Layer**: Business logic
 - **Data Layer**: Prisma ORM with PostgreSQL
@@ -195,6 +211,7 @@ We'll use a layered architecture:
 ## API Endpoints
 
 ### POST /api/auth/login
+
 - **Description**: Authenticate user
 - **Request**: `{ email: string, password: string }`
 - **Response**: `{ token: string, user: User }`
@@ -207,26 +224,31 @@ We'll use a layered architecture:
 **Input**: Approved design
 
 **Output**: `tasks.md` with:
+
 - Discrete tasks
 - Expected outcomes
 - Dependencies
 - Optional flags
 
 **Actions**:
+
 - Review task list
 - Mark tasks as optional
 - Reorder if needed
 - Click "Execute" to start
 
 **Example**:
+
 ```markdown
 ### Task 1: Create database schema
+
 - **Description**: Set up Prisma schema with User model
 - **Expected Outcome**: schema.prisma with User table
 - **Dependencies**: None
 - **Optional**: false
 
 ### Task 2: Implement login endpoint
+
 - **Description**: Create POST /api/auth/login
 - **Expected Outcome**: Working login with JWT
 - **Dependencies**: Task 1
@@ -238,6 +260,7 @@ We'll use a layered architecture:
 **Purpose**: AI implements the tasks
 
 **Process**:
+
 1. AI reads task description
 2. AI uses tools to implement
 3. Terminal commands require approval
@@ -245,10 +268,168 @@ We'll use a layered architecture:
 5. Progress shown in real-time
 
 **Actions**:
+
 - Approve terminal commands
 - Review generated code
 - Provide feedback mid-execution
 - Pause/resume as needed
+
+## Spec Templates
+
+### Using Templates
+
+Spec-Code includes 6 built-in templates to jumpstart your development:
+
+1. **REST API** - Backend API with authentication, CRUD operations
+2. **React Component** - Frontend component with props, state, and styling
+3. **CLI Tool** - Command-line application with argument parsing
+4. **Database Migration** - Schema changes and data transformations
+5. **Bug Fix** - Systematic approach to identifying and fixing issues
+6. **Fullstack Feature** - Complete feature spanning frontend and backend
+
+### Creating from Template
+
+1. Click "New Spec from Template" in sidebar
+2. Select template from the list
+3. Enter spec name
+4. Template guidance is automatically included in memory
+
+### Template Benefits
+
+- **Faster Setup**: Pre-configured requirements structure
+- **Best Practices**: Built-in conventions and patterns
+- **Consistent Quality**: Proven approaches for common scenarios
+- **Learning Tool**: See examples of well-structured specs
+
+## Memory System
+
+### Workspace Memory
+
+Located at `.specCode/memory/workspace.md`, this file contains:
+
+- Project-wide conventions and decisions
+- Technology stack choices
+- Architecture patterns
+- Team agreements
+
+### Per-Spec Memory
+
+Each spec gets its own memory file at `.specCode/memory/specs/<spec-id>.md`:
+
+- Spec-specific decisions and context
+- Task completion notes
+- Template guidance (if used)
+- Progress tracking
+
+### Automatic Recording
+
+Memory is automatically updated when:
+
+- Specs are created or completed
+- Tasks are finished
+- Important decisions are made
+- Templates are applied
+
+### Memory in AI Prompts
+
+Memory content is automatically injected into AI prompts to provide:
+
+- Consistent context across sessions
+- Accumulated project knowledge
+- Previous decisions and rationale
+- Template-specific guidance
+
+## Session Management
+
+### What are Sessions?
+
+Sessions track individual conversations and task executions:
+
+- **Conversation History**: All messages between you and AI
+- **Token Tracking**: Usage and estimated costs
+- **Task Context**: Which spec and task being worked on
+- **Timestamps**: When work started and completed
+
+### Session Types
+
+- **Execution Sessions**: Created during task execution
+- **Chat Sessions**: Created during vibe coding mode
+- **Manual Sessions**: Created via "New Session" command
+
+### Session Tree View
+
+The Sessions panel shows:
+
+- Active sessions (currently running)
+- Recent sessions (last 10)
+- Sessions grouped by spec
+- Token usage and duration
+
+### Resuming Sessions
+
+1. Click on a session in the Sessions panel
+2. Or use "Resume Session" command
+3. Previous context is restored automatically
+4. Continue conversation where you left off
+
+## Agent Methods
+
+### Code Analysis Methods
+
+#### Explain Code (`Ctrl+Shift+E`)
+
+- Select code in editor
+- Right-click → "Explain Code"
+- Get detailed explanation of functionality and patterns
+
+#### Ask About Code (`Ctrl+Shift+A`)
+
+- Select code and ask specific questions
+- Context-aware responses using project memory
+- Useful for understanding complex logic
+
+#### Review Current File
+
+- Comprehensive code review of entire file
+- Checks for security, performance, best practices
+- Provides actionable feedback with line references
+
+### Code Generation Methods
+
+#### Generate Tests (`Ctrl+Shift+T`)
+
+- Creates comprehensive unit tests
+- Detects testing framework automatically
+- Includes edge cases and error conditions
+- Mocks external dependencies
+
+#### Generate Documentation
+
+- Creates JSDoc, docstrings, or README sections
+- Includes usage examples and API documentation
+- Follows language-specific conventions
+
+#### Fix Code (`Ctrl+Shift+F`)
+
+- Automatically fixes common issues
+- Handles syntax errors, type issues, style problems
+- Returns corrected code with explanation
+
+### Git Integration Methods
+
+#### Generate Commit Message (`Ctrl+Shift+G`)
+
+- Analyzes staged changes (`git diff --staged`)
+- Creates conventional commit messages
+- Includes spec context if available
+- Editable before committing
+
+#### Review Changes
+
+- Reviews all uncommitted changes
+- Compares against requirements and design
+- Identifies potential issues or improvements
+- Security and performance analysis
 
 ## Agent Hooks
 
@@ -260,12 +441,13 @@ We'll use a layered architecture:
 4. Configure:
    - Name: "Type Check on Save"
    - Event: "On File Save"
-   - Pattern: "*.ts"
+   - Pattern: "\*.ts"
    - Prompt: "Check for type errors and suggest fixes"
 
 ### Example Hooks
 
 #### Type Check TypeScript
+
 ```json
 {
   "name": "Type Check TypeScript",
@@ -277,6 +459,7 @@ We'll use a layered architecture:
 ```
 
 #### Lint JavaScript
+
 ```json
 {
   "name": "Lint JavaScript",
@@ -288,6 +471,7 @@ We'll use a layered architecture:
 ```
 
 #### Documentation Reminder
+
 ```json
 {
   "name": "Documentation Check",
@@ -319,23 +503,27 @@ We'll use a layered architecture:
 # Project Steering
 
 ## Coding Style
+
 - Use TypeScript with strict mode
 - Prefer functional programming
 - Max function length: 30 lines
 - Use destructuring for props
 
 ## Naming Conventions
+
 - Components: PascalCase
 - Functions: camelCase
 - Constants: UPPER_SNAKE_CASE
 
 ## Technology Stack
+
 - Frontend: React + TypeScript
 - Styling: Tailwind CSS
 - State: Zustand
 - API: React Query
 
 ## Architecture
+
 - Use custom hooks for logic
 - Keep components presentational
 - Implement proper error boundaries
@@ -357,6 +545,7 @@ If you have an `AGENTS.md` file in your workspace, Spec-Code will automatically 
 ### Built-in MCP Servers
 
 Install with one click:
+
 - **Filesystem**: File operations
 - **GitHub**: GitHub API access
 - **PostgreSQL**: Database queries
@@ -377,6 +566,7 @@ Install with one click:
 ### Using MCP Tools
 
 Once connected, MCP tools are automatically available to the AI agent during execution. The agent will:
+
 1. Discover available tools
 2. Select appropriate tools for tasks
 3. Call tools with correct parameters
@@ -451,24 +641,28 @@ Once connected, MCP tools are automatically available to the AI agent during exe
 ### Troubleshooting
 
 #### Model Not Responding
+
 - Check API key
 - Verify model name
 - Test connection
 - Check rate limits
 
 #### Hooks Not Firing
+
 - Verify hook is enabled
 - Check file pattern
 - Ensure event type matches
 - Review output channel
 
 #### MCP Connection Failed
+
 - Verify server is running
 - Check URL/command
 - Review error message
 - Try reconnecting
 
 #### Execution Stuck
+
 - Check for pending command approval
 - Review output channel for errors
 - Cancel and restart if needed
@@ -476,9 +670,9 @@ Once connected, MCP tools are automatically available to the AI agent during exe
 
 ### Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Shift+K` | Open Spec-Code chat |
+| Shortcut                     | Action              |
+| ---------------------------- | ------------------- |
+| `Ctrl+Shift+K`               | Open Spec-Code chat |
 | `Ctrl+Shift+P` → "Spec-Code" | Access all commands |
 
 ### Command Palette Commands

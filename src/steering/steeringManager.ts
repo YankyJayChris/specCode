@@ -1,17 +1,18 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
-import { KiroFolderManager } from '../utils/kiroFolder';
+import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
+import * as os from "os";
+import { v4 as uuidv4 } from "uuid";
+import { KiroFolderManager } from "../utils/kiroFolder";
 
 export interface SteeringDocument {
-    id: string;
-    name: string;
-    scope: 'workspace' | 'global';
-    content: string;
-    path: string;
-    enabled: boolean;
-    priority: number;
+  id: string;
+  name: string;
+  scope: "workspace" | "global";
+  content: string;
+  path: string;
+  enabled: boolean;
+  priority: number;
 }
 
 export const DEFAULT_STEERING_TEMPLATE = `# Agent Steering Document
@@ -123,203 +124,225 @@ This document guides the AI agent's behavior when generating code and making dec
 `;
 
 export class SteeringManager {
-    private steeringDocs: Map<string, SteeringDocument> = new Map();
+  private steeringDocs: Map<string, SteeringDocument> = new Map();
 
-    constructor(private kiroFolder: KiroFolderManager) {
-        this.loadSteeringDocuments();
+  constructor(private kiroFolder: KiroFolderManager) {
+    this.loadSteeringDocuments();
+  }
+
+  private async loadSteeringDocuments() {
+    // Load workspace steering
+    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    if (workspaceRoot) {
+      const workspaceSteeringPath = path.join(
+        workspaceRoot,
+        KiroFolderManager.FOLDER_NAME,
+        "steering",
+      );
+      if (fs.existsSync(workspaceSteeringPath)) {
+        await this.loadSteeringFromDirectory(
+          workspaceSteeringPath,
+          "workspace",
+        );
+      } else {
+        fs.mkdirSync(workspaceSteeringPath, { recursive: true });
+      }
     }
 
-    private async loadSteeringDocuments() {
-        // Load workspace steering
-        const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
-        if (workspaceRoot) {
-            const workspaceSteeringPath = path.join(workspaceRoot, '.kiro', 'steering');
-            if (fs.existsSync(workspaceSteeringPath)) {
-                await this.loadSteeringFromDirectory(workspaceSteeringPath, 'workspace');
-            } else {
-                fs.mkdirSync(workspaceSteeringPath, { recursive: true });
-            }
-        }
+    // Load global steering
+    const globalSteeringPath = this.getGlobalSteeringPath();
+    if (fs.existsSync(globalSteeringPath)) {
+      await this.loadSteeringFromDirectory(globalSteeringPath, "global");
+    } else {
+      fs.mkdirSync(globalSteeringPath, { recursive: true });
+    }
+  }
 
-        // Load global steering
-        const globalSteeringPath = this.getGlobalSteeringPath();
-        if (fs.existsSync(globalSteeringPath)) {
-            await this.loadSteeringFromDirectory(globalSteeringPath, 'global');
-        } else {
-            fs.mkdirSync(globalSteeringPath, { recursive: true });
-        }
+  private getGlobalSteeringPath(): string {
+    const config = vscode.workspace.getConfiguration("specCode");
+    const customPath = config.get<string>(
+      "globalSteeringPath",
+      "~/.kiro/steering",
+    );
+
+    if (customPath.startsWith("~")) {
+      const homedir = os.homedir();
+      return customPath.replace("~", homedir);
     }
 
-    private getGlobalSteeringPath(): string {
-        const config = vscode.workspace.getConfiguration('specCode');
-        const customPath = config.get<string>('globalSteeringPath', '~/.kiro/steering');
-        
-        if (customPath.startsWith('~')) {
-            const homedir = require('os').homedir();
-            return customPath.replace('~', homedir);
-        }
-        
-        return customPath;
-    }
+    return customPath;
+  }
 
-    private async loadSteeringFromDirectory(dirPath: string, scope: 'workspace' | 'global') {
-        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-        
-        for (const entry of entries) {
-            if (entry.isFile() && entry.name.endsWith('.md')) {
-                const filePath = path.join(dirPath, entry.name);
-                const content = fs.readFileSync(filePath, 'utf-8');
-                const name = entry.name.replace('.md', '');
-                
-                const doc: SteeringDocument = {
-                    id: uuidv4(),
-                    name,
-                    scope,
-                    content,
-                    path: filePath,
-                    enabled: true,
-                    priority: scope === 'global' ? 1 : 2 // Workspace takes precedence
-                };
-                
-                this.steeringDocs.set(doc.id, doc);
-            }
-        }
-    }
+  private async loadSteeringFromDirectory(
+    dirPath: string,
+    scope: "workspace" | "global",
+  ) {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
-    async createSteeringDocument(name: string, scope: 'workspace' | 'global'): Promise<SteeringDocument> {
-        let dirPath: string;
-        
-        if (scope === 'workspace') {
-            const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
-            if (!workspaceRoot) {
-                throw new Error('No workspace open');
-            }
-            dirPath = path.join(workspaceRoot, '.kiro', 'steering');
-        } else {
-            dirPath = this.getGlobalSteeringPath();
-        }
-
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-        }
-
-        const filePath = path.join(dirPath, `${name}.md`);
-        
-        if (fs.existsSync(filePath)) {
-            throw new Error(`Steering document "${name}" already exists`);
-        }
-
-        fs.writeFileSync(filePath, DEFAULT_STEERING_TEMPLATE);
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.endsWith(".md")) {
+        const filePath = path.join(dirPath, entry.name);
+        const content = fs.readFileSync(filePath, "utf-8");
+        const name = entry.name.replace(".md", "");
 
         const doc: SteeringDocument = {
-            id: uuidv4(),
-            name,
-            scope,
-            content: DEFAULT_STEERING_TEMPLATE,
-            path: filePath,
-            enabled: true,
-            priority: scope === 'global' ? 1 : 2
+          id: uuidv4(),
+          name,
+          scope,
+          content,
+          path: filePath,
+          enabled: true,
+          priority: scope === "global" ? 1 : 2, // Workspace takes precedence
         };
 
         this.steeringDocs.set(doc.id, doc);
-        return doc;
+      }
+    }
+  }
+
+  async createSteeringDocument(
+    name: string,
+    scope: "workspace" | "global",
+  ): Promise<SteeringDocument> {
+    let dirPath: string;
+
+    if (scope === "workspace") {
+      const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+      if (!workspaceRoot) {
+        throw new Error("No workspace open");
+      }
+      dirPath = path.join(workspaceRoot, ".kiro", "steering");
+    } else {
+      dirPath = this.getGlobalSteeringPath();
     }
 
-    async updateSteeringDocument(id: string, content: string): Promise<void> {
-        const doc = this.steeringDocs.get(id);
-        if (!doc) throw new Error('Steering document not found');
-
-        doc.content = content;
-        fs.writeFileSync(doc.path, content);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    async deleteSteeringDocument(id: string): Promise<void> {
-        const doc = this.steeringDocs.get(id);
-        if (!doc) return;
+    const filePath = path.join(dirPath, `${name}.md`);
 
-        if (fs.existsSync(doc.path)) {
-            fs.unlinkSync(doc.path);
-        }
-
-        this.steeringDocs.delete(id);
+    if (fs.existsSync(filePath)) {
+      throw new Error(`Steering document "${name}" already exists`);
     }
 
-    async toggleSteeringDocument(id: string): Promise<void> {
-        const doc = this.steeringDocs.get(id);
-        if (doc) {
-            doc.enabled = !doc.enabled;
-        }
+    fs.writeFileSync(filePath, DEFAULT_STEERING_TEMPLATE);
+
+    const doc: SteeringDocument = {
+      id: uuidv4(),
+      name,
+      scope,
+      content: DEFAULT_STEERING_TEMPLATE,
+      path: filePath,
+      enabled: true,
+      priority: scope === "global" ? 1 : 2,
+    };
+
+    this.steeringDocs.set(doc.id, doc);
+    return doc;
+  }
+
+  async updateSteeringDocument(id: string, content: string): Promise<void> {
+    const doc = this.steeringDocs.get(id);
+    if (!doc) throw new Error("Steering document not found");
+
+    doc.content = content;
+    fs.writeFileSync(doc.path, content);
+  }
+
+  async deleteSteeringDocument(id: string): Promise<void> {
+    const doc = this.steeringDocs.get(id);
+    if (!doc) return;
+
+    if (fs.existsSync(doc.path)) {
+      fs.unlinkSync(doc.path);
     }
 
-    async getCombinedSteering(): Promise<string> {
-        const enabledDocs = Array.from(this.steeringDocs.values())
-            .filter(d => d.enabled)
-            .sort((a, b) => b.priority - a.priority);
+    this.steeringDocs.delete(id);
+  }
 
-        if (enabledDocs.length === 0) {
-            return DEFAULT_STEERING_TEMPLATE;
-        }
+  async toggleSteeringDocument(id: string): Promise<void> {
+    const doc = this.steeringDocs.get(id);
+    if (doc) {
+      doc.enabled = !doc.enabled;
+    }
+  }
 
-        const sections: string[] = [];
-        
-        for (const doc of enabledDocs) {
-            sections.push(`<!-- ${doc.scope.toUpperCase()} STEERING: ${doc.name} -->`);
-            sections.push(doc.content);
-            sections.push('');
-        }
+  async getCombinedSteering(): Promise<string> {
+    const enabledDocs = Array.from(this.steeringDocs.values())
+      .filter((d) => d.enabled)
+      .sort((a, b) => b.priority - a.priority);
 
-        return sections.join('\n');
+    if (enabledDocs.length === 0) {
+      return DEFAULT_STEERING_TEMPLATE;
     }
 
-    getSteeringDocuments(): SteeringDocument[] {
-        return Array.from(this.steeringDocs.values())
-            .sort((a, b) => {
-                // Sort by scope (workspace first), then by name
-                if (a.scope !== b.scope) {
-                    return a.scope === 'workspace' ? -1 : 1;
-                }
-                return a.name.localeCompare(b.name);
-            });
+    const sections: string[] = [];
+
+    for (const doc of enabledDocs) {
+      sections.push(
+        `<!-- ${doc.scope.toUpperCase()} STEERING: ${doc.name} -->`,
+      );
+      sections.push(doc.content);
+      sections.push("");
     }
 
-    getSteeringDocument(id: string): SteeringDocument | undefined {
-        return this.steeringDocs.get(id);
+    return sections.join("\n");
+  }
+
+  getSteeringDocuments(): SteeringDocument[] {
+    return Array.from(this.steeringDocs.values()).sort((a, b) => {
+      // Sort by scope (workspace first), then by name
+      if (a.scope !== b.scope) {
+        return a.scope === "workspace" ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  getSteeringDocument(id: string): SteeringDocument | undefined {
+    return this.steeringDocs.get(id);
+  }
+
+  // Check for AGENTS.md compatibility
+  async checkForAgentsMd(): Promise<string | null> {
+    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    if (!workspaceRoot) return null;
+
+    const agentsMdPath = path.join(workspaceRoot, "AGENTS.md");
+    if (fs.existsSync(agentsMdPath)) {
+      return fs.readFileSync(agentsMdPath, "utf-8");
     }
 
-    // Check for AGENTS.md compatibility
-    async checkForAgentsMd(): Promise<string | null> {
-        const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
-        if (!workspaceRoot) return null;
+    return null;
+  }
 
-        const agentsMdPath = path.join(workspaceRoot, 'AGENTS.md');
-        if (fs.existsSync(agentsMdPath)) {
-            return fs.readFileSync(agentsMdPath, 'utf-8');
-        }
+  // Import from AGENTS.md
+  async importFromAgentsMd(): Promise<void> {
+    const content = await this.checkForAgentsMd();
+    if (!content) return;
 
-        return null;
-    }
+    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    if (!workspaceRoot) return;
 
-    // Import from AGENTS.md
-    async importFromAgentsMd(): Promise<void> {
-        const content = await this.checkForAgentsMd();
-        if (!content) return;
+    const steeringPath = path.join(
+      workspaceRoot,
+      KiroFolderManager.FOLDER_NAME,
+      "steering",
+      "AGENTS.md",
+    );
+    fs.writeFileSync(steeringPath, content);
 
-        const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
-        if (!workspaceRoot) return;
+    const doc: SteeringDocument = {
+      id: uuidv4(),
+      name: "AGENTS",
+      scope: "workspace",
+      content,
+      path: steeringPath,
+      enabled: true,
+      priority: 3, // Highest priority for AGENTS.md
+    };
 
-        const steeringPath = path.join(workspaceRoot, '.kiro', 'steering', 'AGENTS.md');
-        fs.writeFileSync(steeringPath, content);
-
-        const doc: SteeringDocument = {
-            id: uuidv4(),
-            name: 'AGENTS',
-            scope: 'workspace',
-            content,
-            path: steeringPath,
-            enabled: true,
-            priority: 3 // Highest priority for AGENTS.md
-        };
-
-        this.steeringDocs.set(doc.id, doc);
-    }
+    this.steeringDocs.set(doc.id, doc);
+  }
 }

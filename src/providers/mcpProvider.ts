@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import { MCPClient, MCPServer } from '../mcp/mcpClient';
 
-export class MCPProvider implements vscode.TreeDataProvider<MCPTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<MCPTreeItem | undefined | null | void> = new vscode.EventEmitter<MCPTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<MCPTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+type MCPItem = MCPTreeItem | MCPToolTreeItem;
+
+export class MCPProvider implements vscode.TreeDataProvider<MCPItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<MCPItem | undefined | null | void> = new vscode.EventEmitter<MCPItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<MCPItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     constructor(private mcpClient: MCPClient) {
         // Listen for server changes
@@ -16,11 +18,11 @@ export class MCPProvider implements vscode.TreeDataProvider<MCPTreeItem> {
         this._onDidChangeTreeData.fire();
     }
 
-    getTreeItem(element: MCPTreeItem): vscode.TreeItem {
+    getTreeItem(element: MCPItem): vscode.TreeItem {
         return element;
     }
 
-    getChildren(element?: MCPTreeItem): Thenable<MCPTreeItem[]> {
+    getChildren(element?: MCPItem): Thenable<MCPItem[]> {
         if (!element) {
             const servers = this.mcpClient.getServers();
             return Promise.resolve(servers.map(server => new MCPTreeItem(server)));

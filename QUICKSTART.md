@@ -39,16 +39,19 @@ Click the ghost icon (👻) in the VS Code activity bar.
 ### 2. Add Your AI Model
 
 **Option A: Via Command Palette**
+
 1. Press `Ctrl+Shift+P`
 2. Type "Spec-Code: Add AI Model"
 3. Follow the prompts
 
 **Option B: Via Settings**
+
 1. Open Settings (`Ctrl+,`)
 2. Search "Spec-Code"
 3. Edit `specCode.models`
 
 **Example - OpenAI:**
+
 ```json
 {
   "specCode.models": [
@@ -70,6 +73,20 @@ Click the ghost icon (👻) in the VS Code activity bar.
 ```
 
 ### 3. Create Your First Spec
+
+**Option A: From Template**
+
+1. Click "New Spec from Template" in the sidebar
+2. Choose from 6 built-in templates:
+   - REST API
+   - React Component
+   - CLI Tool
+   - Database Migration
+   - Bug Fix
+   - Fullstack Feature
+3. Enter name: `user-authentication`
+
+**Option B: From Scratch**
 
 1. Click "New Spec" in the sidebar
 2. Enter name: `user-authentication`
@@ -104,11 +121,42 @@ Click the ghost icon (👻) in the VS Code activity bar.
 
 ## Common Tasks
 
+### Use Spec Templates
+
+1. Click "New Spec from Template"
+2. Choose template (REST API, React Component, etc.)
+3. Enter spec name
+4. Template guidance automatically included
+
 ### Switch to Vibe Coding Mode
 
 1. Open chat (`Ctrl+Shift+K`)
 2. Click "Vibe" button
 3. Type your prompt
+
+### Generate Tests for Current File
+
+1. Open a code file
+2. Press `Ctrl+Shift+T`
+3. Or right-click → "Generate Tests"
+
+### Explain Selected Code
+
+1. Select code in editor
+2. Press `Ctrl+Shift+E`
+3. Or right-click → "Explain Code"
+
+### Generate Commit Message
+
+1. Stage your changes (`git add`)
+2. Press `Ctrl+Shift+G`
+3. Review and edit the generated message
+
+### View Memory and Sessions
+
+1. Click "Sessions" in sidebar to see conversation history
+2. Use "View Memory" to see project context
+3. Resume previous sessions to continue work
 
 ### Create an Agent Hook
 
@@ -116,7 +164,7 @@ Click the ghost icon (👻) in the VS Code activity bar.
 2. Click "New Hook"
 3. Configure:
    - Event: "On File Save"
-   - Pattern: "*.ts"
+   - Pattern: "\*.ts"
    - Prompt: "Check for type errors"
 
 ### Add Steering Guidelines
@@ -133,10 +181,15 @@ Click the ghost icon (👻) in the VS Code activity bar.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Shift+K` | Open Spec-Code chat |
-| `Ctrl+Shift+P` | Access all commands |
+| Shortcut       | Action                  |
+| -------------- | ----------------------- |
+| `Ctrl+Shift+K` | Open Spec-Code chat     |
+| `Ctrl+Shift+E` | Explain selected code   |
+| `Ctrl+Shift+F` | Fix selected code       |
+| `Ctrl+Shift+G` | Generate commit message |
+| `Ctrl+Shift+A` | Ask about selection     |
+| `Ctrl+Shift+T` | Generate tests          |
+| `Ctrl+Shift+P` | Access all commands     |
 
 ## Troubleshooting
 

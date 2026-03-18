@@ -30,14 +30,21 @@ The result? Production-ready, verifiable code with human-readable specs for stak
 - **💬 Two Modes**: Spec-Driven for structured work, Vibe Coding for quick tasks
 - **🔒 Terminal Command Approval**: Approve or trust patterns before execution
 - **📊 Cost Tracking**: Token usage and estimated costs per request
+- **🧠 Memory System**: Persistent workspace and per-spec memory
+- **📈 Session Management**: Track conversations, tokens, and costs per task
+- **📋 Spec Templates**: 6 built-in templates (REST API, React Component, CLI Tool, etc.)
+- **🔧 Enhanced Agent Methods**: Generate tests, docs, review code, explain code, fix code
 
 ### 🎨 VS Code Integration
 
-- **Sidebar Panel**: Ghost icon with Specs, Hooks, Steering, and MCP sections
+- **Sidebar Panel**: Ghost icon with Specs, Hooks, Steering, Sessions, and MCP sections
 - **Chat Webview**: Interactive AI chat with real-time updates
-- **File Explorer Integration**: `.kiro/` folder with specs, steering, and hooks
+- **Memory System**: Workspace and per-spec memory persistence
+- **Session Management**: Track conversations, tokens, and costs per task
+- **File Explorer Integration**: `.specCode/` folder with automatic migration from `.kiro/`
 - **Command Palette**: All commands accessible via `Ctrl+Shift+P`
 - **Keyboard Shortcuts**: `Ctrl+Shift+K` to open chat
+- **Editor Context Menus**: Right-click for "Ask About Selection", "Generate Tests", etc.
 
 ## 🚀 Quick Start
 
@@ -111,35 +118,38 @@ Configure unlimited models via Settings (`Ctrl+,` → search "Spec-Code"):
 
 ### Supported Providers
 
-| Provider | Setup | Tools | Vision |
-|----------|-------|-------|--------|
-| OpenAI | API key | ✅ | ✅ |
-| Anthropic Claude | API key | ✅ | ✅ |
-| Google Gemini | API key | ✅ | ✅ |
-| xAI Grok | API key | ✅ | ❌ |
-| Ollama | Local server | ⚠️ | ❌ |
-| LM Studio | Local server | ⚠️ | ❌ |
-| Azure OpenAI | Endpoint + key | ✅ | ✅ |
-| Custom | OpenAI-compatible | ⚠️ | ⚠️ |
+| Provider         | Setup             | Tools | Vision |
+| ---------------- | ----------------- | ----- | ------ |
+| OpenAI           | API key           | ✅    | ✅     |
+| Anthropic Claude | API key           | ✅    | ✅     |
+| Google Gemini    | API key           | ✅    | ✅     |
+| xAI Grok         | API key           | ✅    | ❌     |
+| Ollama           | Local server      | ⚠️    | ❌     |
+| LM Studio        | Local server      | ⚠️    | ❌     |
+| Azure OpenAI     | Endpoint + key    | ✅    | ✅     |
+| Custom           | OpenAI-compatible | ⚠️    | ⚠️     |
 
 ### Agent Steering
 
-Create `.kiro/steering/` markdown files to guide AI behavior:
+Create `.specCode/steering/` markdown files to guide AI behavior:
 
 ```markdown
 # Project Steering
 
 ## Coding Style
+
 - Use TypeScript with strict mode
 - Prefer functional programming patterns
 - Maximum function length: 30 lines
 
 ## Technology Stack
+
 - Backend: Node.js + Express
 - Frontend: React + TypeScript
 - Database: PostgreSQL with Prisma
 
 ## Architecture
+
 - Use repository pattern for data access
 - Implement proper error handling with custom classes
 - Write tests for all business logic
@@ -173,6 +183,7 @@ Add external tools via Model Context Protocol:
 ```
 
 Available MCP servers:
+
 - `@modelcontextprotocol/server-filesystem` - File operations
 - `@modelcontextprotocol/server-github` - GitHub API
 - `@modelcontextprotocol/server-postgres` - PostgreSQL access
@@ -182,7 +193,7 @@ Available MCP servers:
 ## 📁 Folder Structure
 
 ```
-.kiro/
+.specCode/
 ├── specs/
 │   └── feature-name/
 │       ├── requirements.md    # EARS requirements
@@ -194,6 +205,10 @@ Available MCP servers:
 │   └── architecture.md        # Architecture guidelines
 ├── hooks/
 │   └── type-check.json        # Hook definitions
+├── memory/
+│   ├── workspace.md           # Project memory
+│   └── specs/                 # Per-spec memory
+├── sessions/                  # Session history
 ├── mcp.json                   # MCP server configs
 └── settings/                  # Extension settings
 ```

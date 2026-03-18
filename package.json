@@ -32,6 +32,56 @@
   "contributes": {
     "commands": [
       {
+        "command": "specCode.newSession",
+        "title": "New Session",
+        "icon": "$(add)"
+      },
+      {
+        "command": "specCode.viewSessions",
+        "title": "View Sessions",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "specCode.endSession",
+        "title": "End Session",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "specCode.viewMemory",
+        "title": "View Memory",
+        "icon": "$(database)"
+      },
+      {
+        "command": "specCode.clearMemory",
+        "title": "Clear Memory",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "specCode.explainCode",
+        "title": "Explain Code",
+        "icon": "$(question)"
+      },
+      {
+        "command": "specCode.fixCode",
+        "title": "Fix Code",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "specCode.askAboutCode",
+        "title": "Ask About Code",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "specCode.generateCommitMessage",
+        "title": "Generate Commit Message",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "specCode.reviewChanges",
+        "title": "Review Changes",
+        "icon": "$(diff)"
+      },
+      {
         "command": "specCode.openChat",
         "title": "Open Spec-Code Chat",
         "icon": "$(comment-discussion)"
@@ -162,9 +212,39 @@
         "icon": "$(x)"
       },
       {
-        "command": "specCode.trustPattern",
-        "title": "Trust This Pattern",
-        "icon": "$(shield)"
+        "command": "specCode.newSpecFromTemplate",
+        "title": "New Spec from Template",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "specCode.generateTests",
+        "title": "Generate Tests",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "specCode.generateDocs",
+        "title": "Generate Documentation",
+        "icon": "$(book)"
+      },
+      {
+        "command": "specCode.reviewCurrentFile",
+        "title": "Review Current File",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "specCode.askAboutSelection",
+        "title": "Ask About Selection",
+        "icon": "$(question)"
+      },
+      {
+        "command": "specCode.clearSpecMemory",
+        "title": "Clear Spec Memory",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "specCode.resumeSession",
+        "title": "Resume Session",
+        "icon": "$(play)"
       }
     ],
     "viewsContainers": {
@@ -197,6 +277,12 @@
           "when": "workspaceHasKiroFolder || true"
         },
         {
+          "id": "specCode.sessions",
+          "name": "Sessions",
+          "icon": "$(history)",
+          "when": "workspaceHasKiroFolder || true"
+        },
+        {
           "id": "specCode.mcp",
           "name": "MCP Servers",
           "icon": "$(server)",
@@ -218,6 +304,10 @@
         "contents": "No steering documents. [New Steering](command:specCode.newSteering)"
       },
       {
+        "view": "specCode.sessions",
+        "contents": "No active sessions. [New Session](command:specCode.newSession)"
+      },
+      {
         "view": "specCode.mcp",
         "contents": "No MCP servers. [Add Server](command:specCode.addMCPServer)"
       }
@@ -237,6 +327,11 @@
         {
           "command": "specCode.newSteering",
           "when": "view == specCode.steering",
+          "group": "navigation"
+        },
+        {
+          "command": "specCode.newSession",
+          "when": "view == specCode.sessions",
           "group": "navigation"
         },
         {
@@ -302,6 +397,11 @@
           "group": "inline"
         },
         {
+          "command": "specCode.endSession",
+          "when": "view == specCode.sessions && viewItem == session",
+          "group": "inline"
+        },
+        {
           "command": "specCode.removeMCPServer",
           "when": "view == specCode.mcp && viewItem == mcpServer",
           "group": "inline"
@@ -315,6 +415,61 @@
         {
           "command": "specCode.openSettings",
           "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.explainCode",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.fixCode",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.askAboutCode",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.generateCommitMessage",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.reviewChanges",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.viewSessions",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.viewMemory",
+          "group": "Spec-Code"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "specCode.askAboutSelection",
+          "when": "editorHasSelection",
+          "group": "specCode@1"
+        },
+        {
+          "command": "specCode.explainCode",
+          "when": "editorHasSelection",
+          "group": "specCode@2"
+        },
+        {
+          "command": "specCode.fixCode",
+          "when": "editorHasSelection",
+          "group": "specCode@3"
+        },
+        {
+          "command": "specCode.generateTests",
+          "when": "editorTextFocus",
+          "group": "specCode@4"
+        },
+        {
+          "command": "specCode.reviewCurrentFile",
+          "when": "editorTextFocus",
+          "group": "specCode@5"
         }
       ]
     },
@@ -323,6 +478,35 @@
         "command": "specCode.openChat",
         "key": "ctrl+shift+k",
         "mac": "cmd+shift+k",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "specCode.explainCode",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "specCode.fixCode",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "specCode.generateCommitMessage",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
+      },
+      {
+        "command": "specCode.askAboutSelection",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "specCode.generateTests",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
         "when": "editorTextFocus"
       }
     ],
@@ -451,22 +635,24 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
+    "@types/glob": "^8.1.0",
     "@types/node": "20.x",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.3",
     "@vscode/test-electron": "^2.3.8",
-    "@vscode/vsce": "^2.22.0"
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",
-    "openai": "^4.28.0",
     "@google/generative-ai": "^0.21.0",
+    "@types/uuid": "^9.0.7",
     "axios": "^1.6.5",
-    "zod": "^3.22.4",
+    "glob": "^13.0.6",
+    "openai": "^4.28.0",
     "uuid": "^9.0.1",
-    "@types/uuid": "^9.0.7"
+    "zod": "^3.22.4"
   }
 }

@@ -24,11 +24,16 @@ spec-code/
 │   │   └── llmManager.ts
 │   ├── mcp/                   # MCP client
 │   │   └── mcpClient.ts
+│   ├── memory/                # Memory management
+│   │   └── memoryManager.ts
 │   ├── providers/             # Tree view providers
 │   │   ├── specsProvider.ts
 │   │   ├── hooksProvider.ts
 │   │   ├── steeringProvider.ts
-│   │   └── mcpProvider.ts
+│   │   ├── mcpProvider.ts
+│   │   └── sessionProvider.ts
+│   ├── session/               # Session management
+│   │   └── sessionManager.ts
 │   ├── specs/                 # Spec management
 │   │   ├── specManager.ts
 │   │   └── specTypes.ts
@@ -62,18 +67,49 @@ spec-code/
 
 ### 2. Multi-Model AI Support
 
-| Provider | Status | Tools | Vision |
-|----------|--------|-------|--------|
-| OpenAI | ✅ | ✅ | ✅ |
-| Anthropic Claude | ✅ | ✅ | ✅ |
-| Google Gemini | ✅ | ✅ | ✅ |
-| xAI Grok | ✅ | ✅ | ❌ |
-| Ollama | ✅ | ⚠️ | ❌ |
-| LM Studio | ✅ | ⚠️ | ❌ |
-| Azure OpenAI | ✅ | ✅ | ✅ |
-| Custom OpenAI-compatible | ✅ | ⚠️ | ⚠️ |
+| Provider                 | Status | Tools | Vision |
+| ------------------------ | ------ | ----- | ------ |
+| OpenAI                   | ✅     | ✅    | ✅     |
+| Anthropic Claude         | ✅     | ✅    | ✅     |
+| Google Gemini            | ✅     | ✅    | ✅     |
+| xAI Grok                 | ✅     | ✅    | ❌     |
+| Ollama                   | ✅     | ⚠️    | ❌     |
+| LM Studio                | ✅     | ⚠️    | ❌     |
+| Azure OpenAI             | ✅     | ✅    | ✅     |
+| Custom OpenAI-compatible | ✅     | ⚠️    | ⚠️     |
 
-### 3. Agent Hooks
+### 3. Memory System
+
+- **Workspace Memory**: Global project context and conventions
+- **Per-Spec Memory**: Decisions and progress tracking per specification
+- **Automatic Recording**: Key decisions and task completions logged
+- **Context Injection**: Memory automatically included in AI prompts
+
+### 4. Session Management
+
+- **Per-Task Sessions**: Track conversations for each task execution
+- **Token Counting**: Monitor usage and estimated costs
+- **Session History**: Restore context from previous conversations
+- **Session Tree View**: Browse and resume past sessions
+
+### 5. Spec Templates
+
+- **6 Built-in Templates**: REST API, React Component, CLI Tool, Database Migration, Bug Fix, Fullstack Feature
+- **Template Guidance**: Each template includes steering hints and conventions
+- **Quick Creation**: One-click spec creation from templates
+
+### 6. Enhanced Agent Methods
+
+- **generateTests**: Create comprehensive unit tests for code
+- **generateDocs**: Generate documentation (JSDoc, docstrings, etc.)
+- **reviewFile**: Perform code review with security and quality checks
+- **explainCode**: Explain code functionality and patterns
+- **fixCode**: Fix code issues and bugs
+- **askAboutCode**: Answer questions about specific code sections
+- **generateCommitMessage**: Create conventional commit messages from git diff
+- **reviewChanges**: Review uncommitted changes against requirements
+
+### 7. Agent Hooks
 
 - Event-driven automations
 - File save/create/delete triggers
@@ -81,15 +117,15 @@ spec-code/
 - Custom prompt templates
 - Enable/disable per hook
 
-### 4. Agent Steering
+### 8. Agent Steering
 
 - Workspace-level steering documents
-- Global steering documents (`~/.kiro/steering/`)
+- Global steering documents (`~/.specCode/steering/`)
 - AGENTS.md compatibility
 - Automatic context injection
 - Priority-based merging
 
-### 5. MCP (Model Context Protocol)
+### 9. MCP (Model Context Protocol)
 
 - HTTP/SSE transport support
 - STDIO transport support
@@ -97,25 +133,29 @@ spec-code/
 - One-click server installation
 - Built-in server directory
 
-### 6. VS Code Integration
+### 10. VS Code Integration
 
-- Sidebar panel with 4 sections
+- Sidebar panel with 5 sections (Specs, Hooks, Steering, Sessions, MCP)
 - Interactive chat webview
 - Command palette integration
 - Keyboard shortcuts (`Ctrl+Shift+K`)
-- File explorer integration
+- Editor context menus
+- File explorer integration with `.specCode/` folder
 
-### 7. Security Features
+### 11. Security Features
 
 - API keys in VS Code SecretStorage
 - Workspace-scoped file access
 - Terminal command approval workflow
 - Trusted command patterns
+- Automatic folder migration from `.kiro/` to `.specCode/`
 
 ## Commands Implemented
 
 ### Spec Commands
+
 - `specCode.newSpec` - Create new spec
+- `specCode.newSpecFromTemplate` - Create spec from template
 - `specCode.editSpec` - Edit spec
 - `specCode.deleteSpec` - Delete spec
 - `specCode.generateRequirements` - Generate requirements
@@ -125,53 +165,88 @@ spec-code/
 - `specCode.approvePhase` - Approve phase
 - `specCode.regeneratePhase` - Regenerate phase
 
+### Agent Commands
+
+- `specCode.explainCode` - Explain selected code
+- `specCode.fixCode` - Fix selected code
+- `specCode.askAboutCode` - Ask about selected code
+- `specCode.askAboutSelection` - Ask about selection
+- `specCode.generateTests` - Generate tests for current file
+- `specCode.generateDocs` - Generate documentation
+- `specCode.reviewCurrentFile` - Review current file
+- `specCode.generateCommitMessage` - Generate git commit message
+- `specCode.reviewChanges` - Review uncommitted changes
+
+### Memory Commands
+
+- `specCode.viewMemory` - View workspace memory
+- `specCode.clearMemory` - Clear workspace memory
+- `specCode.clearSpecMemory` - Clear spec memory
+
+### Session Commands
+
+- `specCode.newSession` - Create new session
+- `specCode.viewSessions` - View all sessions
+- `specCode.endSession` - End current session
+- `specCode.resumeSession` - Resume previous session
+
 ### Hook Commands
+
 - `specCode.newHook` - Create new hook
 - `specCode.editHook` - Edit hook
 - `specCode.toggleHook` - Enable/disable hook
 - `specCode.deleteHook` - Delete hook
 
 ### Steering Commands
+
 - `specCode.newSteering` - Create steering document
 - `specCode.editSteering` - Edit steering document
 
 ### MCP Commands
+
 - `specCode.addMCPServer` - Add MCP server
 - `specCode.removeMCPServer` - Remove MCP server
 - `specCode.refreshMCP` - Refresh MCP servers
 
 ### Settings Commands
+
 - `specCode.openSettings` - Open extension settings
+- `specCode.openChat` - Open chat webview
 - `specCode.addModel` - Add AI model
 - `specCode.testModel` - Test model connection
 
 ### Task Commands
+
 - `specCode.startTask` - Start task execution
 - `specCode.toggleTaskOptional` - Toggle task optional flag
 
 ### Terminal Commands
+
 - `specCode.approveCommand` - Approve terminal command
 - `specCode.cancelCommand` - Cancel terminal command
 - `specCode.trustPattern` - Add trusted command pattern
 
 ## File Count
 
-- **TypeScript Source Files**: 18
+- **TypeScript Source Files**: 20
 - **Configuration Files**: 7
 - **Documentation Files**: 6
-- **Total Lines of Code**: ~4,500+
+- **Total Lines of Code**: ~6,000+
 
 ## Dependencies
 
 ### Production Dependencies
+
 - `@anthropic-ai/sdk` - Anthropic Claude API
 - `@google/generative-ai` - Google Gemini API
 - `openai` - OpenAI API
 - `axios` - HTTP client
 - `uuid` - UUID generation
 - `zod` - Schema validation
+- `glob` - File pattern matching
 
 ### Development Dependencies
+
 - `typescript` - TypeScript compiler
 - `@types/vscode` - VS Code API types
 - `@types/node` - Node.js types

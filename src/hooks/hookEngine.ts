@@ -3,7 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { exec } from "child_process";
 import { v4 as uuidv4 } from "uuid";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 import { LLMManager } from "../llm/llmManager";
 import { SteeringManager } from "../steering/steeringManager";
 
@@ -51,7 +51,7 @@ export class HookEngine {
 
   constructor(
     private context: vscode.ExtensionContext,
-    private kiroFolder: KiroFolderManager,
+    private specCodeFolder: SpecCodeFolderManager,
     private llmManager: LLMManager,
     private steeringManager: SteeringManager,
   ) {
@@ -60,14 +60,14 @@ export class HookEngine {
   }
 
   private async loadHooks() {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       return;
     }
 
     const hooksFolder = path.join(
       workspaceRoot,
-      KiroFolderManager.FOLDER_NAME,
+      SpecCodeFolderManager.FOLDER_NAME,
       "hooks",
     );
 
@@ -143,14 +143,14 @@ export class HookEngine {
   }
 
   private async saveHook(hook: Hook): Promise<void> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       return;
     }
 
     const hooksFolder = path.join(
       workspaceRoot,
-      KiroFolderManager.FOLDER_NAME,
+      SpecCodeFolderManager.FOLDER_NAME,
       "hooks",
     );
     if (!fs.existsSync(hooksFolder)) {
@@ -363,7 +363,7 @@ export class HookEngine {
     filePath: string,
     content?: string,
   ): Promise<void> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       return;
     }
@@ -476,7 +476,7 @@ Execute the following prompt in the given context.`;
       throw new Error("Command hook missing command");
     }
 
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     const timeout = hook.then.timeout || 60000; // 60 seconds default
 
     return new Promise((resolve, reject) => {

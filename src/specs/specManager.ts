@@ -12,7 +12,7 @@ import {
 } from "./specTypes";
 import { LLMManager } from "../llm/llmManager";
 import { SteeringManager } from "../steering/steeringManager";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 import { MemoryManager } from "../memory/memoryManager";
 
 export class SpecManager {
@@ -20,7 +20,7 @@ export class SpecManager {
   private specsFolder: string = "";
 
   constructor(
-    private kiroFolder: KiroFolderManager,
+    private specCodeFolder: SpecCodeFolderManager,
     private llmManager: LLMManager,
     private steeringManager: SteeringManager,
     private memoryManager: MemoryManager,
@@ -29,14 +29,14 @@ export class SpecManager {
   }
 
   private async loadSpecs() {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       return;
     }
 
     this.specsFolder = path.join(
       workspaceRoot,
-      KiroFolderManager.FOLDER_NAME,
+      SpecCodeFolderManager.FOLDER_NAME,
       "specs",
     );
 
@@ -115,7 +115,7 @@ export class SpecManager {
     }
 
     this.specs.set(spec.id, spec);
-    this.kiroFolder.setSpec(spec);
+    this.specCodeFolder.setSpec(spec);
   }
 
   private parseTasksFromMarkdown(content: string): Task[] {
@@ -149,14 +149,14 @@ export class SpecManager {
     description: string,
     templateId?: string,
   ): Promise<Spec> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
 
     const specPath = path.join(
       workspaceRoot,
-      KiroFolderManager.FOLDER_NAME,
+      SpecCodeFolderManager.FOLDER_NAME,
       "specs",
       name,
     );
@@ -184,7 +184,7 @@ export class SpecManager {
     };
 
     this.specs.set(spec.id, spec);
-    this.kiroFolder.setSpec(spec);
+    this.specCodeFolder.setSpec(spec);
     await this.saveSpec(spec);
 
     this.memoryManager.appendSpecMemory(
@@ -231,7 +231,7 @@ export class SpecManager {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { path: _path, ...data } = spec;
     fs.writeFileSync(metadataPath, JSON.stringify(data, null, 2));
-    this.kiroFolder.setSpec(spec);
+    this.specCodeFolder.setSpec(spec);
   }
 
   async generateRequirements(specId: string, prompt: string): Promise<void> {
@@ -536,7 +536,7 @@ Create 5-15 tasks. Each task should take 15-30 minutes.`;
 
   async generateTests(specId: string, filePath: string): Promise<string> {
     const spec = this.specs.get(specId);
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -581,7 +581,7 @@ Generate complete, runnable test files covering edge cases and error conditions.
     specId: string,
     filePath: string,
   ): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -614,7 +614,7 @@ Include @param, @returns, @throws, and @example. Return ONLY the updated file co
     specId: string | undefined,
     filePath: string,
   ): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }

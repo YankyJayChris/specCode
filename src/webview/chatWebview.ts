@@ -15,6 +15,7 @@ interface ChatMessage {
   tokens?: number;
   specId?: string;
   sessionId?: string;
+  providerId?: string;
 }
 
 export class ChatWebviewProvider implements vscode.WebviewViewProvider {
@@ -24,6 +25,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
   private currentSpecId?: string;
   private currentSessionId?: string;
   private streamingMessageId?: string;
+  private currentProviderId?: string;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -34,9 +36,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
     private memoryManager: MemoryManager,
   ) {}
 
-  resolveWebviewView(
-    webviewView: vscode.WebviewView,
-  ) {
+  resolveWebviewView(webviewView: vscode.WebviewView) {
     this.view = webviewView;
 
     webviewView.webview.options = {
@@ -54,6 +54,9 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
         case "setMode":
           this.currentMode = data.mode;
           this.postMessage("modeChanged", { mode: data.mode });
+          break;
+        case "selectProvider":
+          await this.handleSelectProvider(data.providerId);
           break;
         case "createSpec":
           await this.handleCreateSpec(data.prompt);
@@ -102,6 +105,15 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
         case "addModel":
           vscode.commands.executeCommand("specCode.addModel");
           break;
+        case "openProviderSetup":
+          vscode.commands.executeCommand("specCode.openProviderSetup");
+          break;
+        case "testProvider":
+          await this.handleTestProvider(data.providerId);
+          break;
+        case "refreshProviders":
+          await this.handleRefreshProviders();
+          break;
       }
     });
 
@@ -109,6 +121,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
     this.sendSpecsList();
     this.sendSessionsList();
     this.sendModels();
+    this.sendProviderStatus();
   }
 
   show() {
@@ -160,6 +173,11 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
       this.currentSessionId = session.id;
     }
 
+    // Get the provider to use for this message
+    const providerId =
+      this.currentProviderId ||
+      (await this.llmManager.getDefaultModelForPhase("execution"));
+
     // Add user message
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -169,6 +187,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
       mode: this.currentMode,
       images,
       sessionId: this.currentSessionId,
+      providerId,
     };
 
     this.messages.push(userMessage);
@@ -238,7 +257,8 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
 
     try {
       const modelId =
-        await this.llmManager.getDefaultModelForPhase("execution");
+        this.currentProviderId ||
+        (await this.llmManager.getDefaultModelForPhase("execution"));
 
       // Create streaming message
       this.streamingMessageId = `msg-${Date.now()}`;
@@ -248,6 +268,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
         content: "",
         timestamp: Date.now(),
         sessionId: this.currentSessionId,
+        providerId: modelId,
       };
 
       this.messages.push(streamingMessage);
@@ -470,7 +491,107 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
 
   private async sendModels() {
     const models = this.llmManager.getModels();
-    this.postMessage("setModels", { models });
+    const activeProvider = this.llmManager.getActiveProvider();
+    this.postMessage("setModels", {
+      models,
+      activeProviderId: activeProvider?.id,
+      currentProviderId: this.currentProviderId,
+    });
+  }
+
+  private async sendProviderStatus() {
+    const models = this.llmManager.getModels();
+    const providerStatuses = models.map((model) => ({
+      id: model.id,
+      name: model.name,
+      provider: model.provider,
+      status: this.llmManager.getProviderStatus(model.id),
+      metrics: this.llmManager.getProviderMetrics(model.id),
+    }));
+
+    this.postMessage("setProviderStatuses", { providers: providerStatuses });
+  }
+
+  private async handleSelectProvider(providerId: string) {
+    try {
+      const provider = this.llmManager.getModel(providerId);
+      if (!provider) {
+        this.postMessage("error", { message: "Provider not found" });
+        return;
+      }
+
+      // Test the provider before selecting it
+      this.postMessage("setTyping", true);
+      const testResult = await this.llmManager.testProviderConnection(
+        providerId,
+        10000,
+      );
+
+      if (testResult.success) {
+        this.currentProviderId = providerId;
+        this.postMessage("providerSelected", {
+          providerId,
+          providerName: provider.name,
+        });
+        this.sendProviderStatus();
+      } else {
+        this.postMessage("error", {
+          message: `Failed to connect to ${provider.name}: ${testResult.error}`,
+        });
+      }
+    } catch (error: any) {
+      this.postMessage("error", { message: error.message });
+    } finally {
+      this.postMessage("setTyping", false);
+    }
+  }
+
+  private async handleTestProvider(providerId: string) {
+    try {
+      const provider = this.llmManager.getModel(providerId);
+      if (!provider) {
+        this.postMessage("error", { message: "Provider not found" });
+        return;
+      }
+
+      this.postMessage("providerTesting", { providerId });
+      const testResult = await this.llmManager.testProviderConnection(
+        providerId,
+        30000,
+      );
+
+      if (testResult.success) {
+        this.postMessage("providerTestSuccess", {
+          providerId,
+          response: testResult.response?.substring(0, 100) + "...",
+        });
+      } else {
+        this.postMessage("providerTestFailed", {
+          providerId,
+          error: testResult.error,
+        });
+      }
+
+      this.sendProviderStatus();
+    } catch (error: any) {
+      this.postMessage("providerTestFailed", {
+        providerId,
+        error: error.message,
+      });
+    }
+  }
+
+  private async handleRefreshProviders() {
+    try {
+      this.postMessage("setTyping", true);
+      await this.llmManager.refreshProviderAvailability();
+      this.sendProviderStatus();
+      this.postMessage("providersRefreshed");
+    } catch (error: any) {
+      this.postMessage("error", { message: error.message });
+    } finally {
+      this.postMessage("setTyping", false);
+    }
   }
 
   private postMessage(type: string, data?: any) {
@@ -553,6 +674,44 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
             gap: 8px;
             align-items: center;
             flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .provider-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .provider-dropdown {
+            padding: 4px 8px;
+            border: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 120px;
+        }
+
+        .provider-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        .provider-status.online { background: var(--vscode-testing-iconPassed); }
+        .provider-status.offline { background: var(--vscode-descriptionForeground); }
+        .provider-status.error { background: var(--vscode-testing-iconFailed); }
+        .provider-status.testing { 
+            background: var(--vscode-progressBar-background);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .toolbar-btn {
@@ -981,6 +1140,22 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
         <button class="toolbar-btn" onclick="openSettings()">
             <span>⚙️</span> Settings
         </button>
+        
+        <div class="provider-selector">
+            <span style="font-size: 11px; color: var(--vscode-descriptionForeground);">Provider:</span>
+            <select class="provider-dropdown" id="providerSelect" onchange="selectProvider()">
+                <option value="">Use Active Provider</option>
+            </select>
+            <button class="toolbar-btn" onclick="testCurrentProvider()" title="Test Provider">
+                <span>🔍</span>
+            </button>
+            <button class="toolbar-btn" onclick="refreshProviders()" title="Refresh Providers">
+                <span>🔄</span>
+            </button>
+            <button class="toolbar-btn" onclick="openProviderSetup()" title="Provider Setup">
+                <span>⚙️</span>
+            </button>
+        </div>
     </div>
 
     <div class="main-content">
@@ -1036,6 +1211,8 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
         let specs = [];
         let sessions = [];
         let models = [];
+        let providerStatuses = [];
+        let currentProviderId = null;
 
         // Mode toggle
         document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -1094,7 +1271,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         function newSession() {
-            const name = prompt('Session name:') || \`Chat \${new Date().toLocaleTimeString()}\`;
+            const name = prompt('Session name:') || 'Chat ' + new Date().toLocaleTimeString();
             const type = currentMode === 'spec-driven' ? 'execution' : 'chat';
             vscode.postMessage({ type: 'newSession', name, type });
         }
@@ -1118,6 +1295,73 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
             vscode.postMessage({ type: 'openSettings' });
         }
 
+        function openProviderSetup() {
+            vscode.postMessage({ type: 'openProviderSetup' });
+        }
+
+        function selectProvider() {
+            const select = document.getElementById('providerSelect');
+            const providerId = select.value;
+            currentProviderId = providerId || null;
+            vscode.postMessage({ type: 'selectProvider', providerId });
+        }
+
+        function testCurrentProvider() {
+            const select = document.getElementById('providerSelect');
+            const providerId = select.value || (models.find(m => m.id === data.activeProviderId)?.id);
+            if (providerId) {
+                vscode.postMessage({ type: 'testProvider', providerId });
+            }
+        }
+
+        function refreshProviders() {
+            vscode.postMessage({ type: 'refreshProviders' });
+        }
+
+        function updateProviderDropdown(data) {
+            const select = document.getElementById('providerSelect');
+            select.innerHTML = '<option value="">Use Active Provider</option>';
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                
+                // Add status indicator
+                const status = providerStatuses.find(p => p.id === model.id)?.status;
+                const statusIcon = getStatusIcon(status?.state || 'offline');
+                
+                option.textContent = statusIcon + " " + model.name + " (" + model.provider + ")";
+                
+                if (model.id === data.activeProviderId && !currentProviderId) {
+                    option.textContent += ' - Active';
+                }
+                
+                if (model.id === currentProviderId) {
+                    option.selected = true;
+                }
+                
+                select.appendChild(option);
+            });
+        }
+
+        function getStatusIcon(state) {
+            switch (state) {
+                case 'online': return '🟢';
+                case 'error': return '🔴';
+                case 'testing': return '🟡';
+                default: return '⚪';
+            }
+        }
+
+        function showProviderStatus(message, type = 'info') {
+            const container = document.getElementById('chatContainer');
+            const statusEl = document.createElement('div');
+            statusEl.className = type === 'error' ? 'error-message' : 'success-message';
+            statusEl.textContent = message;
+            container.appendChild(statusEl);
+            container.scrollTop = container.scrollHeight;
+        }
+
         function addMessage(message) {
             const container = document.getElementById('chatContainer');
             
@@ -1128,17 +1372,16 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
             const avatar = message.role === 'user' ? '👤' : '👻';
             const sender = message.role === 'user' ? 'You' : 'Spec-Code';
             const time = new Date(message.timestamp).toLocaleTimeString();
-            const tokens = message.tokens ? \`\${message.tokens} tokens\` : '';
+            const tokens = message.tokens ? message.tokens + ' tokens' : '';
             
-            messageEl.innerHTML = \`
-                <div class="message-header">
-                    <div class="message-avatar \${message.role}">\${avatar}</div>
-                    <span class="message-sender">\${sender}</span>
-                    <span class="message-time">\${time}</span>
-                    \${tokens ? \`<span class="message-tokens">\${tokens}</span>\` : ''}
-                </div>
-                <div class="message-content">\${formatContent(message.content)}</div>
-            \`;
+            messageEl.innerHTML = 
+                '<div class="message-header">' +
+                    '<div class="message-avatar ' + message.role + '">' + avatar + '</div>' +
+                    '<span class="message-sender">' + sender + '</span>' +
+                    '<span class="message-time">' + time + '</span>' +
+                    (tokens ? '<span class="message-tokens">' + tokens + '</span>' : '') +
+                '</div>' +
+                '<div class="message-content">' + formatContent(message.content) + '</div>';
             
             container.appendChild(messageEl);
             container.scrollTop = container.scrollHeight;
@@ -1196,7 +1439,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
             const container = document.getElementById('chatContainer');
             const errorEl = document.createElement('div');
             errorEl.className = 'error-message';
-            errorEl.textContent = \`Error: \${message}\`;
+            errorEl.textContent = 'Error: ' + message;
             container.appendChild(errorEl);
             container.scrollTop = container.scrollHeight;
         }
@@ -1262,19 +1505,41 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
                     break;
                 case 'setSessions':
                     sessions = data.sessions;
-                    updateSessionInfo(currentSessionId ? \`Session: \${sessions.find(s => s.id === currentSessionId)?.name || 'Unknown'}\` : '');
+                    updateSessionInfo(currentSessionId ? 'Session: ' + (sessions.find(s => s.id === currentSessionId)?.name || 'Unknown') : '');
                     break;
                 case 'setModels':
                     models = data.models;
+                    updateProviderDropdown(data);
+                    break;
+                case 'setProviderStatuses':
+                    providerStatuses = data.providers;
+                    updateProviderDropdown({ activeProviderId: models.find(m => m.id === currentProviderId)?.id });
+                    break;
+                case 'providerSelected':
+                    currentProviderId = data.providerId;
+                    showProviderStatus("Switched to provider: " + data.providerName);
+                    updateProviderDropdown({ activeProviderId: currentProviderId });
+                    break;
+                case 'providerTesting':
+                    showProviderStatus("Testing provider connection...");
+                    break;
+                case 'providerTestSuccess':
+                    showProviderStatus("Provider test successful: " + data.response);
+                    break;
+                case 'providerTestFailed':
+                    showProviderStatus("Provider test failed: " + data.error, 'error');
+                    break;
+                case 'providersRefreshed':
+                    showProviderStatus('Provider status refreshed');
                     break;
                 case 'sessionCreated':
                     currentSessionId = data.sessionId;
-                    updateSessionInfo(\`Session: \${data.name}\`);
-                    showSuccess(\`Started new \${data.type} session: \${data.name}\`);
+                    updateSessionInfo('Session: ' + data.name);
+                    showSuccess('Started new ' + data.type + ' session: ' + data.name);
                     break;
                 case 'sessionLoaded':
                     currentSessionId = data.sessionId;
-                    updateSessionInfo(\`Session: \${data.sessionName}\`);
+                    updateSessionInfo('Session: ' + data.sessionName);
                     // Clear and load messages
                     document.getElementById('chatContainer').innerHTML = '';
                     data.messages.forEach(addMessage);
@@ -1285,7 +1550,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
                     break;
                 case 'specCreated':
                     currentSpecId = data.specId;
-                    showSuccess(\`Created spec: \${data.name}\`);
+                    showSuccess('Created spec: ' + data.name);
                     break;
                 case 'requirementsGenerated':
                 case 'designGenerated':

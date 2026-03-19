@@ -5,6 +5,8 @@ import { SteeringProvider } from "./providers/steeringProvider";
 import { MCPProvider } from "./providers/mcpProvider";
 import { SessionProvider } from "./providers/sessionProvider";
 import { ChatWebviewProvider } from "./webview/chatWebview";
+import { ProviderSetupWebviewProvider } from "./webview/providerSetupWebview";
+import { ProviderSwitcherProvider } from "./providers/providerSwitcherProvider";
 import { SpecManager } from "./specs/specManager";
 import { HookEngine } from "./hooks/hookEngine";
 import { SteeringManager } from "./steering/steeringManager";
@@ -13,31 +15,55 @@ import { LLMManager } from "./llm/llmManager";
 import { MemoryManager } from "./memory/memoryManager";
 import { SessionManager } from "./session/sessionManager";
 import { AgentEngine } from "./agent/agentEngine";
-import { KiroFolderManager } from "./utils/kiroFolder";
+import { SpecCodeFolderManager } from "./utils/specCodeFolder";
 import { registerCommands } from "./commands";
 
 let extensionContext: vscode.ExtensionContext;
+
+async function initializeProviderDiscovery(
+  llmManager: LLMManager,
+): Promise<void> {
+  try {
+    // Discover local providers on startup
+    const discovered = await llmManager.discoverLocalProviders();
+
+    if (discovered.length > 0) {
+      const message = `Found ${discovered.length} local provider(s). Would you like to configure them?`;
+      const result = await vscode.window.showInformationMessage(
+        message,
+        "Configure Now",
+        "Later",
+      );
+
+      if (result === "Configure Now") {
+        vscode.commands.executeCommand("specCode.openProviderSetup");
+      }
+    }
+  } catch (error) {
+    console.error("Failed to discover local providers:", error);
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
   extensionContext = context;
   console.log("Spec-Code extension is now active!");
 
   // Initialize core managers
-  const kiroFolderManager = new KiroFolderManager();
+  const specCodeFolderManager = new SpecCodeFolderManager();
   const llmManager = new LLMManager(context);
   const mcpClient = new MCPClient(context);
-  const steeringManager = new SteeringManager(kiroFolderManager);
-  const memoryManager = new MemoryManager(kiroFolderManager);
-  const sessionManager = new SessionManager(kiroFolderManager);
+  const steeringManager = new SteeringManager(specCodeFolderManager);
+  const memoryManager = new MemoryManager(specCodeFolderManager);
+  const sessionManager = new SessionManager(specCodeFolderManager);
   const specManager = new SpecManager(
-    kiroFolderManager,
+    specCodeFolderManager,
     llmManager,
     steeringManager,
     memoryManager,
   );
   const hookEngine = new HookEngine(
     context,
-    kiroFolderManager,
+    specCodeFolderManager,
     llmManager,
     steeringManager,
   );
@@ -45,13 +71,13 @@ export function activate(context: vscode.ExtensionContext) {
     llmManager,
     mcpClient,
     steeringManager,
-    kiroFolderManager,
+    specCodeFolderManager,
     memoryManager,
     sessionManager,
   );
 
-  // Initialize .kiro folder structure
-  kiroFolderManager.initializeWorkspace();
+  // Initialize .specCode folder structure
+  specCodeFolderManager.initializeWorkspace();
 
   // Register tree data providers
   const specsProvider = new SpecsProvider(specManager);
@@ -60,14 +86,19 @@ export function activate(context: vscode.ExtensionContext) {
   const mcpProvider = new MCPProvider(mcpClient);
   const sessionProvider = new SessionProvider(
     sessionManager,
-    kiroFolderManager,
+    specCodeFolderManager,
   );
+  const providerSwitcherProvider = new ProviderSwitcherProvider(llmManager);
 
   vscode.window.registerTreeDataProvider("specCode.specs", specsProvider);
   vscode.window.registerTreeDataProvider("specCode.hooks", hooksProvider);
   vscode.window.registerTreeDataProvider("specCode.steering", steeringProvider);
   vscode.window.registerTreeDataProvider("specCode.mcp", mcpProvider);
   vscode.window.registerTreeDataProvider("specCode.sessions", sessionProvider);
+  vscode.window.registerTreeDataProvider(
+    "specCode.providerSwitcher",
+    providerSwitcherProvider,
+  );
 
   // Register chat webview provider
   const chatWebviewProvider = new ChatWebviewProvider(
@@ -79,10 +110,20 @@ export function activate(context: vscode.ExtensionContext) {
     memoryManager,
   );
 
+  // Register provider setup webview provider
+  const providerSetupWebviewProvider = new ProviderSetupWebviewProvider(
+    context.extensionUri,
+    llmManager,
+  );
+
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       "specCode.chat",
       chatWebviewProvider,
+    ),
+    vscode.window.registerWebviewViewProvider(
+      "specCode.providerSetup",
+      providerSetupWebviewProvider,
     ),
   );
 
@@ -93,6 +134,7 @@ export function activate(context: vscode.ExtensionContext) {
     steeringProvider,
     mcpProvider,
     sessionProvider,
+    providerSwitcherProvider,
     specManager,
     hookEngine,
     steeringManager,
@@ -102,7 +144,8 @@ export function activate(context: vscode.ExtensionContext) {
     sessionManager,
     agentEngine,
     chatWebviewProvider,
-    kiroFolderManager,
+    providerSetupWebviewProvider,
+    specCodeFolderManager,
   });
 
   // Start hook engine
@@ -111,6 +154,9 @@ export function activate(context: vscode.ExtensionContext) {
   // Integrate hooks with agent engine
   agentEngine.setHookEngine(hookEngine);
 
+  // Initialize provider discovery on extension startup
+  initializeProviderDiscovery(llmManager);
+
   // Refresh providers periodically
   setInterval(() => {
     specsProvider.refresh();
@@ -118,6 +164,7 @@ export function activate(context: vscode.ExtensionContext) {
     steeringProvider.refresh();
     mcpProvider.refresh();
     sessionProvider.refresh();
+    providerSwitcherProvider.refresh();
   }, 5000);
 
   // Show welcome message

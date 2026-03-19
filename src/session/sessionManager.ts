@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 
 export interface SessionMessage {
   id: string;
@@ -39,13 +39,13 @@ export interface Session {
 }
 
 export class SessionManager {
-  private folderManager: KiroFolderManager;
+  private folderManager: SpecCodeFolderManager;
   private currentSession: Session | null = null;
   private onSessionChanged: vscode.EventEmitter<Session | null> =
     new vscode.EventEmitter();
   public readonly onDidChangeSession = this.onSessionChanged.event;
 
-  constructor(folderManager: KiroFolderManager) {
+  constructor(folderManager: SpecCodeFolderManager) {
     this.folderManager = folderManager;
   }
 

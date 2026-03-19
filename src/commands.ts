@@ -15,7 +15,9 @@ import { MemoryManager } from "./memory/memoryManager";
 import { SessionManager } from "./session/sessionManager";
 import { AgentEngine } from "./agent/agentEngine";
 import { ChatWebviewProvider } from "./webview/chatWebview";
-import { KiroFolderManager } from "./utils/kiroFolder";
+import { ProviderSetupWebviewProvider } from "./webview/providerSetupWebview";
+import { ProviderSwitcherProvider } from "./providers/providerSwitcherProvider";
+import { SpecCodeFolderManager } from "./utils/specCodeFolder";
 import { Spec, SpecPhase } from "./specs/specTypes";
 
 interface CommandContext {
@@ -24,6 +26,7 @@ interface CommandContext {
   steeringProvider: SteeringProvider;
   mcpProvider: MCPProvider;
   sessionProvider: SessionProvider;
+  providerSwitcherProvider: ProviderSwitcherProvider;
   specManager: SpecManager;
   hookEngine: HookEngine;
   steeringManager: SteeringManager;
@@ -33,7 +36,8 @@ interface CommandContext {
   sessionManager: SessionManager;
   agentEngine: AgentEngine;
   chatWebviewProvider: ChatWebviewProvider;
-  kiroFolderManager: KiroFolderManager;
+  providerSetupWebviewProvider: ProviderSetupWebviewProvider;
+  specCodeFolderManager: SpecCodeFolderManager;
 }
 
 export function registerCommands(
@@ -891,105 +895,18 @@ export function registerCommands(
     },
   );
 
+  const openProviderSetup = vscode.commands.registerCommand(
+    "specCode.openProviderSetup",
+    () => {
+      cmdCtx.providerSetupWebviewProvider.show();
+    },
+  );
+
   const addModel = vscode.commands.registerCommand(
     "specCode.addModel",
     async () => {
-      const provider = await vscode.window.showQuickPick(
-        [
-          { label: "OpenAI", value: "openai" },
-          { label: "Anthropic Claude", value: "anthropic" },
-          { label: "Google Gemini", value: "google" },
-          { label: "xAI Grok", value: "xai" },
-          { label: "Ollama (Local)", value: "ollama" },
-          { label: "LM Studio (Local)", value: "lmstudio" },
-          { label: "Azure OpenAI", value: "azure" },
-          { label: "Custom (OpenAI-compatible)", value: "custom" },
-        ],
-        { placeHolder: "Select AI provider" },
-      );
-
-      if (!provider) {
-        return;
-      }
-
-      const name = await vscode.window.showInputBox({
-        prompt: "Enter a name for this model configuration",
-        value: `${provider.label} - Default`,
-      });
-
-      if (!name) {
-        return;
-      }
-
-      const modelName = await vscode.window.showInputBox({
-        prompt: "Enter model name",
-        placeHolder:
-          provider.value === "anthropic"
-            ? "claude-3-5-sonnet-20241022"
-            : provider.value === "openai"
-              ? "gpt-4"
-              : provider.value === "google"
-                ? "gemini-pro"
-                : provider.value === "ollama"
-                  ? "llama2"
-                  : "model-name",
-      });
-
-      if (!modelName) {
-        return;
-      }
-
-      const apiKey = await vscode.window.showInputBox({
-        prompt: "Enter API key (leave empty for local models)",
-        password: true,
-      });
-
-      let baseUrl: string | undefined;
-      if (["ollama", "lmstudio", "custom"].includes(provider.value)) {
-        baseUrl = await vscode.window.showInputBox({
-          prompt: "Enter base URL",
-          placeHolder:
-            provider.value === "ollama"
-              ? "http://localhost:11434"
-              : provider.value === "lmstudio"
-                ? "http://localhost:1234/v1"
-                : "http://localhost:3000/v1",
-        });
-      }
-
-      const temperature = await vscode.window.showInputBox({
-        prompt: "Temperature (0.0 - 1.0)",
-        value: "0.7",
-      });
-
-      const maxTokens = await vscode.window.showInputBox({
-        prompt: "Max tokens",
-        value: "4096",
-      });
-
-      const supportsTools = await vscode.window.showQuickPick(
-        [
-          { label: "Yes", value: true },
-          { label: "No", value: false },
-        ],
-        { placeHolder: "Does this model support tool/function calling?" },
-      );
-
-      const model = {
-        id: `model-${Date.now()}`,
-        name,
-        provider: provider.value as ModelConfig["provider"],
-        modelName,
-        apiKey: apiKey || "",
-        baseUrl: baseUrl || "",
-        temperature: parseFloat(temperature || "0.7"),
-        maxTokens: parseInt(maxTokens || "4096"),
-        supportsTools: supportsTools?.value || false,
-        supportsVision: false,
-      };
-
-      await cmdCtx.llmManager.addModel(model);
-      vscode.window.showInformationMessage(`Added model: ${name}`);
+      // Redirect to the new addProvider command which uses templates
+      vscode.commands.executeCommand("specCode.addProvider");
     },
   );
 
@@ -1033,6 +950,591 @@ export function registerCommands(
             }
           } catch (error) {
             vscode.window.showErrorMessage(`Test failed: ${error}`);
+          }
+        },
+      );
+    },
+  );
+
+  // ==================== NEW PROVIDER MANAGEMENT COMMANDS ====================
+
+  const addProvider = vscode.commands.registerCommand(
+    "specCode.addProvider",
+    async () => {
+      const templates = await cmdCtx.llmManager.getProviderTemplates();
+
+      const selected = await vscode.window.showQuickPick(
+        templates.map((template) => ({
+          label: template.name,
+          description: template.description,
+          detail: template.helpText,
+          value: template,
+        })),
+        { placeHolder: "Select a provider template" },
+      );
+
+      if (!selected) {
+        return;
+      }
+
+      const template = selected.value;
+      const name = await vscode.window.showInputBox({
+        prompt: "Enter a name for this provider configuration",
+        value: template.name,
+      });
+
+      if (!name) {
+        return;
+      }
+
+      const id = `${template.provider}-${Date.now()}`;
+      let apiKey = "";
+
+      if (template.requiredFields.includes("apiKey")) {
+        apiKey =
+          (await vscode.window.showInputBox({
+            prompt: `Enter API key for ${template.name}`,
+            password: true,
+            placeHolder: "Your API key will be stored securely",
+          })) || "";
+
+        if (!apiKey) {
+          vscode.window.showErrorMessage(
+            "API key is required for this provider",
+          );
+          return;
+        }
+      }
+
+      let baseUrl = template.defaultSettings.baseUrl;
+      if (["ollama", "lmstudio", "custom"].includes(template.provider)) {
+        baseUrl =
+          (await vscode.window.showInputBox({
+            prompt: "Enter base URL",
+            value: template.defaultSettings.baseUrl || "",
+            placeHolder:
+              template.provider === "ollama"
+                ? "http://localhost:11434/v1"
+                : template.provider === "lmstudio"
+                  ? "http://localhost:1234/v1"
+                  : "http://localhost:3000/v1",
+          })) || template.defaultSettings.baseUrl;
+      }
+
+      const modelName = await vscode.window.showInputBox({
+        prompt: "Enter model name",
+        value: template.defaultSettings.modelName || "",
+        placeHolder: "e.g., claude-3-5-sonnet-20241022",
+      });
+
+      if (!modelName) {
+        vscode.window.showErrorMessage("Model name is required");
+        return;
+      }
+
+      try {
+        await cmdCtx.llmManager.createFromTemplate(template.id, {
+          id,
+          name,
+          apiKey,
+          baseUrl,
+          modelName,
+        });
+
+        vscode.window.showInformationMessage(`Added provider: ${name}`);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to add provider: ${error}`);
+      }
+    },
+  );
+
+  const editProvider = vscode.commands.registerCommand(
+    "specCode.editProvider",
+    async (providerId?: string) => {
+      if (!providerId) {
+        const models = cmdCtx.llmManager.getModels();
+        const selected = await vscode.window.showQuickPick(
+          models.map((m) => ({
+            label: m.name,
+            description: `${m.provider} • ${m.modelName}`,
+            value: m.id,
+          })),
+          { placeHolder: "Select provider to edit" },
+        );
+        providerId = selected?.value;
+      }
+
+      if (!providerId) {
+        return;
+      }
+
+      const provider = cmdCtx.llmManager.getModel(providerId);
+      if (!provider) {
+        vscode.window.showErrorMessage("Provider not found");
+        return;
+      }
+
+      const name = await vscode.window.showInputBox({
+        prompt: "Provider name",
+        value: provider.name,
+      });
+
+      if (!name) {
+        return;
+      }
+
+      const modelName = await vscode.window.showInputBox({
+        prompt: "Model name",
+        value: provider.modelName,
+      });
+
+      if (!modelName) {
+        return;
+      }
+
+      const updateApiKey = await vscode.window.showQuickPick(
+        [
+          { label: "Keep current API key", value: false },
+          { label: "Update API key", value: true },
+        ],
+        { placeHolder: "API key options" },
+      );
+
+      let apiKey: string | undefined;
+      if (updateApiKey?.value) {
+        apiKey = await vscode.window.showInputBox({
+          prompt: "Enter new API key",
+          password: true,
+          placeHolder: "Leave empty to remove API key",
+        });
+      }
+
+      try {
+        const updates: Partial<ModelConfig> = {
+          name,
+          modelName,
+        };
+
+        if (apiKey !== undefined) {
+          updates.apiKey = apiKey;
+        }
+
+        await cmdCtx.llmManager.updateProvider(providerId, updates);
+        vscode.window.showInformationMessage(`Updated provider: ${name}`);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to update provider: ${error}`);
+      }
+    },
+  );
+
+  const removeProvider = vscode.commands.registerCommand(
+    "specCode.removeProvider",
+    async (providerId?: string) => {
+      if (!providerId) {
+        const models = cmdCtx.llmManager.getModels();
+        const selected = await vscode.window.showQuickPick(
+          models.map((m) => ({
+            label: m.name,
+            description: `${m.provider} • ${m.modelName}`,
+            value: m.id,
+          })),
+          { placeHolder: "Select provider to remove" },
+        );
+        providerId = selected?.value;
+      }
+
+      if (!providerId) {
+        return;
+      }
+
+      const provider = cmdCtx.llmManager.getModel(providerId);
+      if (!provider) {
+        vscode.window.showErrorMessage("Provider not found");
+        return;
+      }
+
+      const result = await vscode.window.showWarningMessage(
+        `Remove provider "${provider.name}"? This will also delete the stored API key.`,
+        { modal: true },
+        "Remove",
+      );
+
+      if (result === "Remove") {
+        try {
+          await cmdCtx.llmManager.removeProvider(providerId);
+          vscode.window.showInformationMessage(
+            `Removed provider: ${provider.name}`,
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to remove provider: ${error}`);
+        }
+      }
+    },
+  );
+
+  const switchProvider = vscode.commands.registerCommand(
+    "specCode.switchProvider",
+    async () => {
+      const models = cmdCtx.llmManager.getModels();
+      const activeProvider = cmdCtx.llmManager.getActiveProvider();
+
+      const selected = await vscode.window.showQuickPick(
+        models.map((m) => ({
+          label: m.name,
+          description: `${m.provider} • ${m.modelName}`,
+          detail: m.id === activeProvider?.id ? "Currently active" : "",
+          value: m.id,
+        })),
+        { placeHolder: "Select provider to activate" },
+      );
+
+      if (selected && selected.value !== activeProvider?.id) {
+        try {
+          await cmdCtx.llmManager.setActiveProvider(selected.value);
+          vscode.window.showInformationMessage(
+            `Switched to provider: ${selected.label}`,
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to switch provider: ${error}`);
+        }
+      }
+    },
+  );
+
+  const testProvider = vscode.commands.registerCommand(
+    "specCode.testProvider",
+    async (providerId?: string) => {
+      if (!providerId) {
+        const models = cmdCtx.llmManager.getModels();
+        const selected = await vscode.window.showQuickPick(
+          models.map((m) => ({
+            label: m.name,
+            description: `${m.provider} • ${m.modelName}`,
+            value: m.id,
+          })),
+          { placeHolder: "Select provider to test" },
+        );
+        providerId = selected?.value;
+      }
+
+      if (!providerId) {
+        return;
+      }
+
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Testing provider connection...",
+          cancellable: false,
+        },
+        async () => {
+          try {
+            const result = await cmdCtx.llmManager.testProviderConnection(
+              providerId!,
+              30000,
+            );
+            if (result.success) {
+              vscode.window.showInformationMessage(
+                `Connection successful! Response: "${result.response?.substring(0, 100)}..."`,
+              );
+            } else {
+              vscode.window.showErrorMessage(
+                `Connection failed: ${result.error}`,
+              );
+            }
+          } catch (error) {
+            vscode.window.showErrorMessage(`Test failed: ${error}`);
+          }
+        },
+      );
+    },
+  );
+
+  const discoverProviders = vscode.commands.registerCommand(
+    "specCode.discoverProviders",
+    async () => {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Discovering local providers...",
+          cancellable: false,
+        },
+        async () => {
+          try {
+            const discovered = await cmdCtx.llmManager.discoverLocalProviders();
+
+            if (discovered.length === 0) {
+              vscode.window.showInformationMessage(
+                "No local providers found. Make sure Ollama or LM Studio is running.",
+              );
+              return;
+            }
+
+            const selected = await vscode.window.showQuickPick(
+              discovered.map((provider) => ({
+                label: provider.name,
+                description: `${provider.provider} • ${provider.modelName}`,
+                detail: "Auto-discovered local provider",
+                value: provider,
+              })),
+              {
+                placeHolder: "Select providers to add",
+                canPickMany: true,
+              },
+            );
+
+            if (selected && selected.length > 0) {
+              let addedCount = 0;
+              for (const item of selected) {
+                try {
+                  await cmdCtx.llmManager.addProvider(item.value);
+                  addedCount++;
+                } catch (error) {
+                  console.error(
+                    `Failed to add provider ${item.value.name}:`,
+                    error,
+                  );
+                }
+              }
+
+              vscode.window.showInformationMessage(
+                `Added ${addedCount} local provider(s)`,
+              );
+            }
+          } catch (error) {
+            vscode.window.showErrorMessage(`Discovery failed: ${error}`);
+          }
+        },
+      );
+    },
+  );
+
+  const importProviderConfig = vscode.commands.registerCommand(
+    "specCode.importProviderConfig",
+    async () => {
+      const fileUri = await vscode.window.showOpenDialog({
+        canSelectFiles: true,
+        canSelectFolders: false,
+        canSelectMany: false,
+        filters: {
+          "JSON files": ["json"],
+        },
+        title: "Select provider configuration file to import",
+      });
+
+      if (fileUri && fileUri[0]) {
+        try {
+          const fileContent = await vscode.workspace.fs.readFile(fileUri[0]);
+          const configJson = Buffer.from(fileContent).toString("utf8");
+
+          await cmdCtx.llmManager.importConfiguration(configJson);
+        } catch (error) {
+          vscode.window.showErrorMessage(`Import failed: ${error}`);
+        }
+      }
+    },
+  );
+
+  const exportProviderConfig = vscode.commands.registerCommand(
+    "specCode.exportProviderConfig",
+    async () => {
+      try {
+        const configJson = await cmdCtx.llmManager.exportConfiguration();
+
+        const saveUri = await vscode.window.showSaveDialog({
+          filters: {
+            "JSON files": ["json"],
+          },
+          defaultUri: vscode.Uri.file("provider-config.json"),
+          title: "Export provider configuration",
+        });
+
+        if (saveUri) {
+          await vscode.workspace.fs.writeFile(
+            saveUri,
+            Buffer.from(configJson, "utf8"),
+          );
+          vscode.window.showInformationMessage(
+            `Configuration exported to ${saveUri.fsPath}`,
+          );
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage(`Export failed: ${error}`);
+      }
+    },
+  );
+
+  const clearCredentials = vscode.commands.registerCommand(
+    "specCode.clearCredentials",
+    async () => {
+      const result = await vscode.window.showWarningMessage(
+        "Clear all stored API keys? This action cannot be undone.",
+        { modal: true },
+        "Clear All",
+      );
+
+      if (result === "Clear All") {
+        try {
+          await cmdCtx.llmManager.clearAllSecureCredentials();
+          vscode.window.showInformationMessage(
+            "All API keys cleared from secure storage",
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to clear credentials: ${error}`,
+          );
+        }
+      }
+    },
+  );
+
+  // ==================== PROVIDER SWITCHER COMMANDS ====================
+
+  const activateProvider = vscode.commands.registerCommand(
+    "specCode.activateProvider",
+    async (providerId: string) => {
+      if (!providerId) {
+        vscode.window.showErrorMessage("Provider ID is required");
+        return;
+      }
+
+      try {
+        // Validate provider before activation
+        const provider = cmdCtx.llmManager.getModel(providerId);
+        if (!provider) {
+          vscode.window.showErrorMessage("Provider not found");
+          return;
+        }
+
+        // Test connection before activation
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Validating provider: ${provider.name}...`,
+            cancellable: false,
+          },
+          async () => {
+            const testResult = await cmdCtx.llmManager.testProviderConnection(
+              providerId,
+              10000, // 10 second timeout
+            );
+
+            if (!testResult.success) {
+              throw new Error(
+                `Provider validation failed: ${testResult.error}`,
+              );
+            }
+
+            await cmdCtx.llmManager.setActiveProvider(providerId);
+          },
+        );
+
+        cmdCtx.providerSwitcherProvider.refresh();
+        vscode.window.showInformationMessage(
+          `Activated provider: ${provider.name}`,
+        );
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to activate provider: ${error}`);
+      }
+    },
+  );
+
+  const setPhaseProvider = vscode.commands.registerCommand(
+    "specCode.setPhaseProvider",
+    async (phase: string) => {
+      if (!phase) {
+        vscode.window.showErrorMessage("Phase is required");
+        return;
+      }
+
+      const providers = cmdCtx.llmManager.getModels();
+      if (providers.length === 0) {
+        vscode.window.showErrorMessage("No providers configured");
+        return;
+      }
+
+      const currentProviderId = await cmdCtx.llmManager.getPhaseProvider(phase);
+
+      const options = [
+        {
+          label: "Use Active Provider",
+          description: "Use the currently active provider for this phase",
+          value: "",
+        },
+        ...providers.map((provider) => ({
+          label: provider.name,
+          description: `${provider.provider} • ${provider.modelName}`,
+          detail: provider.id === currentProviderId ? "Currently selected" : "",
+          value: provider.id,
+        })),
+      ];
+
+      const selected = await vscode.window.showQuickPick(options, {
+        placeHolder: `Select provider for ${phase} phase`,
+      });
+
+      if (selected !== undefined) {
+        try {
+          if (selected.value) {
+            // Validate the selected provider
+            const testResult = await cmdCtx.llmManager.testProviderConnection(
+              selected.value,
+              5000, // 5 second timeout for phase provider validation
+            );
+
+            if (!testResult.success) {
+              const proceed = await vscode.window.showWarningMessage(
+                `Provider validation failed: ${testResult.error}\n\nSet anyway?`,
+                { modal: true },
+                "Set Anyway",
+                "Cancel",
+              );
+
+              if (proceed !== "Set Anyway") {
+                return;
+              }
+            }
+
+            await cmdCtx.llmManager.setPhaseProvider(phase, selected.value);
+            vscode.window.showInformationMessage(
+              `Set ${selected.label} as provider for ${phase} phase`,
+            );
+          } else {
+            // Clear phase-specific provider (use active provider)
+            await cmdCtx.llmManager.setPhaseProvider(phase, "");
+            vscode.window.showInformationMessage(
+              `${phase} phase will now use the active provider`,
+            );
+          }
+
+          cmdCtx.providerSwitcherProvider.refresh();
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to set phase provider: ${error}`,
+          );
+        }
+      }
+    },
+  );
+
+  const refreshProviderStatus = vscode.commands.registerCommand(
+    "specCode.refreshProviderStatus",
+    async () => {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Refreshing provider status...",
+          cancellable: false,
+        },
+        async () => {
+          try {
+            await cmdCtx.llmManager.refreshProviderAvailability();
+            cmdCtx.providerSwitcherProvider.refresh();
+            vscode.window.showInformationMessage("Provider status refreshed");
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to refresh provider status: ${error}`,
+            );
           }
         },
       );
@@ -1401,6 +1903,7 @@ export function registerCommands(
     removeMCPServer,
     refreshMCP,
     openSettings,
+    openProviderSetup,
     addModel,
     testModel,
     startTask,
@@ -1416,5 +1919,19 @@ export function registerCommands(
     askAboutSelection,
     clearSpecMemory,
     resumeSession,
+    // New provider management commands
+    addProvider,
+    editProvider,
+    removeProvider,
+    switchProvider,
+    testProvider,
+    discoverProviders,
+    importProviderConfig,
+    exportProviderConfig,
+    clearCredentials,
+    // Provider switcher commands
+    activateProvider,
+    setPhaseProvider,
+    refreshProviderStatus,
   );
 }

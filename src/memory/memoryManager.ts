@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 
 export interface MemoryEntry {
   timestamp: number;
@@ -10,9 +10,9 @@ export interface MemoryEntry {
 }
 
 export class MemoryManager {
-  private folderManager: KiroFolderManager;
+  private folderManager: SpecCodeFolderManager;
 
-  constructor(folderManager: KiroFolderManager) {
+  constructor(folderManager: SpecCodeFolderManager) {
     this.folderManager = folderManager;
   }
 

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { SessionManager, Session } from "../session/sessionManager";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 
 export class SessionProvider implements vscode.TreeDataProvider<SessionItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<
@@ -12,7 +12,7 @@ export class SessionProvider implements vscode.TreeDataProvider<SessionItem> {
 
   constructor(
     private sessionManager: SessionManager,
-    private folderManager: KiroFolderManager,
+    private folderManager: SpecCodeFolderManager,
   ) {
     // Listen for session changes
     this.sessionManager.onDidChangeSession(() => {
@@ -29,7 +29,7 @@ export class SessionProvider implements vscode.TreeDataProvider<SessionItem> {
   }
 
   getChildren(element?: SessionItem): Thenable<SessionItem[]> {
-    if (!this.folderManager.kiroFolderExists()) {
+    if (!this.folderManager.specCodeFolderExists()) {
       return Promise.resolve([]);
     }
 

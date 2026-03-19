@@ -8,7 +8,7 @@ import { Spec } from "../specs/specTypes";
 import { LLMManager, Message } from "../llm/llmManager";
 import { MCPClient } from "../mcp/mcpClient";
 import { SteeringManager } from "../steering/steeringManager";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 import { MemoryManager } from "../memory/memoryManager";
 import { SessionManager } from "../session/sessionManager";
 import { HookEngine } from "../hooks/hookEngine";
@@ -36,7 +36,7 @@ export class AgentEngine {
     private llmManager: LLMManager,
     private mcpClient: MCPClient,
     private steeringManager: SteeringManager,
-    private kiroFolder: KiroFolderManager,
+    private specCodeFolder: SpecCodeFolderManager,
     private memoryManager: MemoryManager,
     private sessionManager: SessionManager,
   ) {
@@ -105,7 +105,7 @@ export class AgentEngine {
     taskId: string,
     sessionId?: string,
   ): Promise<void> {
-    const spec = this.kiroFolder.getSpec(specId);
+    const spec = this.specCodeFolder.getSpec(specId);
     if (!spec) {
       throw new Error("Spec not found");
     }
@@ -259,7 +259,7 @@ Use available tools to read/write files and run commands. Always explain before 
   }
 
   async generateCommitMessage(specId?: string): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -285,7 +285,7 @@ Use available tools to read/write files and run commands. Always explain before 
     }
 
     const modelId = await this.llmManager.getDefaultModelForPhase("execution");
-    const spec = specId ? this.kiroFolder.getSpec(specId) : undefined;
+    const spec = specId ? this.specCodeFolder.getSpec(specId) : undefined;
     const memory = this.memoryManager.getMemoryContext(specId);
 
     const response = await this.llmManager.generate(modelId, [
@@ -312,7 +312,7 @@ ${spec ? `\nThis is part of spec: ${spec.name}` : ""}`,
   }
 
   async reviewChanges(specId?: string): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -336,7 +336,7 @@ ${spec ? `\nThis is part of spec: ${spec.name}` : ""}`,
     }
 
     const modelId = await this.llmManager.getDefaultModelForPhase("execution");
-    const spec = specId ? this.kiroFolder.getSpec(specId) : undefined;
+    const spec = specId ? this.specCodeFolder.getSpec(specId) : undefined;
     const requirements = spec?.files.requirements
       ? fs.readFileSync(spec.files.requirements, "utf-8")
       : "";
@@ -578,7 +578,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
   }
 
   private async toolReadFile(filePath: string): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -598,7 +598,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
     filePath: string,
     content: string,
   ): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -625,7 +625,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
     oldString: string,
     newString: string,
   ): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -701,7 +701,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
       }
     }
 
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     const workingDir = cwd
       ? path.join(workspaceRoot || "", cwd)
       : workspaceRoot;
@@ -729,7 +729,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
     pattern: string,
     contentPattern?: string,
   ): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -757,7 +757,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
   }
 
   private async toolListDirectory(dirPath: string): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }
@@ -779,7 +779,7 @@ ${memory ? `\nProject context:\n${memory}` : ""}`,
   }
 
   private async toolGetDiagnostics(filePath: string): Promise<string> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (!workspaceRoot) {
       throw new Error("No workspace open");
     }

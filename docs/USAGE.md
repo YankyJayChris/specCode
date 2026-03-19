@@ -30,7 +30,7 @@ This guide covers how to use Spec-Code effectively for spec-driven AI developmen
 
 On first launch, Spec-Code will:
 
-1. Create a `.specCode/` folder in your workspace (migrates from `.kiro/` if exists)
+1. Create a `.specCode/` folder in your workspace (migrates from `.specCode/` if exists)
 2. Show a welcome message with quick actions
 3. Prompt you to add an AI model
 
@@ -495,7 +495,7 @@ The Sessions panel shows:
 ### Workspace vs Global
 
 - **Workspace**: Applies to current project only
-- **Global**: Applies to all projects (in `~/.kiro/steering/`)
+- **Global**: Applies to all projects (in `~/.specCode/steering/`)
 
 ### Example Steering Document
 

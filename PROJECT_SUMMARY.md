@@ -1,13 +1,13 @@
-# Spec-Code Project Summary
+# SpecCode Project Summary
 
 ## Overview
 
-**Spec-Code** is a comprehensive VS Code extension that replicates Kiro's spec-driven AI development capabilities with full model-agnostic support. It enables developers to turn any prompt into production-ready, verifiable code using a structured 4-phase workflow.
+**SpecCode** is a comprehensive VS Code extension that provides spec-driven AI development capabilities with full model-agnostic support and advanced multi-provider management. It enables developers to turn any prompt into production-ready, verifiable code using a structured 4-phase workflow with seamless provider switching and comprehensive setup interfaces.
 
 ## Project Structure
 
 ```
-spec-code/
+specCode/
 ├── .vscode/                    # VS Code workspace settings
 │   ├── launch.json            # Debug configuration
 │   ├── settings.json          # Workspace settings
@@ -20,8 +20,10 @@ spec-code/
 │   │   └── agentEngine.ts
 │   ├── hooks/                 # Event-driven hooks
 │   │   └── hookEngine.ts
-│   ├── llm/                   # LLM integration
-│   │   └── llmManager.ts
+│   ├── llm/                   # Enhanced LLM integration
+│   │   ├── llmManager.ts      # Multi-provider management
+│   │   ├── providerTemplates.ts # Provider templates
+│   │   └── providerTypes.ts   # Enhanced type definitions
 │   ├── mcp/                   # MCP client
 │   │   └── mcpClient.ts
 │   ├── memory/                # Memory management
@@ -31,7 +33,8 @@ spec-code/
 │   │   ├── hooksProvider.ts
 │   │   ├── steeringProvider.ts
 │   │   ├── mcpProvider.ts
-│   │   └── sessionProvider.ts
+│   │   ├── sessionProvider.ts
+│   │   └── providerSwitcherProvider.ts # Provider switching UI
 │   ├── session/               # Session management
 │   │   └── sessionManager.ts
 │   ├── specs/                 # Spec management
@@ -40,9 +43,11 @@ spec-code/
 │   ├── steering/              # Agent steering
 │   │   └── steeringManager.ts
 │   ├── utils/                 # Utilities
-│   │   └── kiroFolder.ts
-│   ├── webview/               # Chat webview
-│   │   └── chatWebview.ts
+│   │   └── specCodeFolder.ts
+│   ├── webview/               # Webview components
+│   │   ├── chatWebview.ts
+│   │   ├── providerSetupWebview.ts # Provider setup interface
+│   │   └── providerSetupWebview-html.ts
 │   ├── commands.ts            # Command registrations
 │   └── extension.ts           # Extension entry point
 ├── .eslintrc.json             # ESLint configuration
@@ -65,18 +70,31 @@ spec-code/
 - **Implementation Plan**: Discrete, trackable tasks with dependencies
 - **Execution Phase**: AI agent with tool calling and terminal approval
 
-### 2. Multi-Model AI Support
+### 2. Enhanced Multi-Provider AI Support
 
-| Provider                 | Status | Tools | Vision |
-| ------------------------ | ------ | ----- | ------ |
-| OpenAI                   | ✅     | ✅    | ✅     |
-| Anthropic Claude         | ✅     | ✅    | ✅     |
-| Google Gemini            | ✅     | ✅    | ✅     |
-| xAI Grok                 | ✅     | ✅    | ❌     |
-| Ollama                   | ✅     | ⚠️    | ❌     |
-| LM Studio                | ✅     | ⚠️    | ❌     |
-| Azure OpenAI             | ✅     | ✅    | ✅     |
-| Custom OpenAI-compatible | ✅     | ⚠️    | ⚠️     |
+| Provider                 | Status | Tools | Vision | Streaming | Auto-Discovery | Templates |
+| ------------------------ | ------ | ----- | ------ | --------- | -------------- | --------- |
+| OpenAI                   | ✅     | ✅    | ✅     | ✅        | ❌             | ✅        |
+| Anthropic Claude         | ✅     | ✅    | ✅     | ✅        | ❌             | ✅        |
+| Google Gemini            | ✅     | ✅    | ✅     | ✅        | ❌             | ✅        |
+| xAI Grok                 | ✅     | ✅    | ❌     | ✅        | ❌             | ✅        |
+| Alibaba Qwen             | ✅     | ✅    | ✅     | ✅        | ❌             | ✅        |
+| Moonshot Kimi            | ✅     | ✅    | ❌     | ✅        | ❌             | ✅        |
+| Ollama                   | ✅     | ⚠️    | ❌     | ✅        | ✅             | ✅        |
+| LM Studio                | ✅     | ⚠️    | ❌     | ✅        | ✅             | ✅        |
+| Azure OpenAI             | ✅     | ✅    | ✅     | ✅        | ❌             | ✅        |
+| Custom OpenAI-compatible | ✅     | ⚠️    | ⚠️     | ⚠️        | ❌             | ✅        |
+
+**New Provider Management Features:**
+
+- **Provider Setup Interface**: Dedicated webview for intuitive provider configuration
+- **Provider Templates**: 14+ pre-configured templates with setup instructions
+- **Auto-Discovery**: Automatic detection of local AI services (Ollama, LM Studio)
+- **Health Monitoring**: Real-time provider status and performance tracking
+- **Phase-Specific Providers**: Different providers for requirements, design, and execution
+- **Configuration Import/Export**: Share provider setups across teams
+- **Secure Credential Storage**: API keys stored in VS Code SecretStorage
+- **Provider Switching**: Quick provider selection with status indicators
 
 ### 3. Memory System
 
@@ -133,24 +151,42 @@ spec-code/
 - One-click server installation
 - Built-in server directory
 
-### 10. VS Code Integration
+### 10. Enhanced VS Code Integration
 
-- Sidebar panel with 5 sections (Specs, Hooks, Steering, Sessions, MCP)
-- Interactive chat webview
-- Command palette integration
+- Sidebar panel with 6 sections (Specs, Hooks, Steering, Sessions, MCP, Provider Setup)
+- Provider Setup webview with template-based configuration
+- Provider switcher with real-time status indicators
+- Interactive chat webview with provider selection
+- Command palette integration with provider management commands
 - Keyboard shortcuts (`Ctrl+Shift+K`)
 - Editor context menus
 - File explorer integration with `.specCode/` folder
+- Automatic folder migration from `.specCode/` to `.specCode/`
 
-### 11. Security Features
+### 11. Advanced Security Features
 
-- API keys in VS Code SecretStorage
-- Workspace-scoped file access
-- Terminal command approval workflow
-- Trusted command patterns
-- Automatic folder migration from `.kiro/` to `.specCode/`
+- API keys in VS Code SecretStorage with workspace isolation
+- Workspace-scoped file access with security boundaries
+- Terminal command approval workflow with trusted patterns
+- Automatic folder migration with security validation
+- SSL certificate validation for HTTPS endpoints
+- Proxy configuration support for corporate environments
+- Provider-specific security settings and authentication methods
 
 ## Commands Implemented
+
+### Provider Management Commands
+
+- `specCode.addProvider` - Add new AI provider
+- `specCode.editProvider` - Edit existing provider
+- `specCode.removeProvider` - Remove provider
+- `specCode.switchProvider` - Quick provider switching
+- `specCode.testProvider` - Test provider connection
+- `specCode.discoverProviders` - Discover local providers
+- `specCode.importProviderConfig` - Import provider configurations
+- `specCode.exportProviderConfig` - Export provider configurations
+- `specCode.openProviderSetup` - Open provider setup interface
+- `specCode.refreshProviderStatus` - Refresh provider health status
 
 ### Spec Commands
 
@@ -212,8 +248,8 @@ spec-code/
 
 - `specCode.openSettings` - Open extension settings
 - `specCode.openChat` - Open chat webview
-- `specCode.addModel` - Add AI model
-- `specCode.testModel` - Test model connection
+- `specCode.addModel` - Add AI model (legacy)
+- `specCode.testModel` - Test model connection (legacy)
 
 ### Task Commands
 
@@ -228,10 +264,10 @@ spec-code/
 
 ## File Count
 
-- **TypeScript Source Files**: 20
+- **TypeScript Source Files**: 25+ (including new provider management files)
 - **Configuration Files**: 7
 - **Documentation Files**: 6
-- **Total Lines of Code**: ~6,000+
+- **Total Lines of Code**: ~8,000+ (enhanced with provider management)
 
 ## Dependencies
 
@@ -289,10 +325,10 @@ MIT License - See LICENSE file for details
 
 ## Contributors
 
-This project was built as a comprehensive open-source alternative to Kiro's proprietary IDE, bringing spec-driven AI development to the broader VS Code community.
+This project was built as a comprehensive open-source alternative to proprietary spec-driven development tools, bringing advanced multi-provider AI capabilities and intuitive provider management to the broader VS Code community.
 
 ---
 
-**Status**: ✅ Feature Complete (MVP)
-**Estimated Effort**: 8-12 weeks for solo developer
-**Architecture**: Modular, extensible, type-safe
+**Status**: ✅ Feature Complete with Enhanced Multi-Provider Support
+**Estimated Effort**: 10-14 weeks for solo developer (including provider management features)
+**Architecture**: Modular, extensible, type-safe with comprehensive provider abstraction

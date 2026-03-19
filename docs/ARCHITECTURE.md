@@ -12,6 +12,8 @@ Spec-Code is built as a VS Code extension using the following architecture:
 ├─────────────────────────────────────────────────────────────────┤
 │  UI Layer                                                        │
 │  ├── Sidebar Tree Views (Specs, Hooks, Steering, Sessions, MCP) │
+│  ├── Provider Setup Webview (Multi-Provider Management)         │
+│  ├── Provider Switcher in Sidebar                               │
 │  ├── Chat Webview                                               │
 │  └── Command Palette Integration                                │
 ├─────────────────────────────────────────────────────────────────┤
@@ -24,16 +26,165 @@ Spec-Code is built as a VS Code extension using the following architecture:
 │  ├── SessionManager (conversation tracking)                     │
 │  └── MCPClient (external tools)                                 │
 ├─────────────────────────────────────────────────────────────────┤
+│  Provider Management Layer                                       │
+│  ├── LLMManager (enhanced multi-provider support)               │
+│  ├── ProviderTemplates (pre-configured provider setups)         │
+│  ├── Provider Discovery (auto-detect local services)            │
+│  ├── Provider Status Monitoring (health & performance)          │
+│  └── Provider Security (credential management)                  │
+├─────────────────────────────────────────────────────────────────┤
 │  Integration Layer                                               │
-│  ├── LLMManager (multi-provider AI)                             │
 │  ├── VS Code APIs (workspace, terminal, files)                  │
-│  └── File System (.specCode folder)                             │
+│  ├── VS Code SecretStorage (secure credential storage)          │
+│  └── File System (.specCode folder)                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Core Components
+## Provider Management Architecture
 
-### SpecManager
+### Provider Templates System
+
+The provider templates system provides pre-configured setups for popular AI services:
+
+```typescript
+interface ProviderTemplate {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  defaultSettings: Partial<ModelConfig>;
+  requiredFields: string[];
+  helpText: string;
+  documentationUrl: string;
+  setupInstructions: string[];
+}
+```
+
+**Template Categories:**
+
+1. **Cloud Providers** - Require API keys
+   - Anthropic Claude (Sonnet, Haiku)
+   - Google Gemini Pro
+   - OpenAI GPT models
+   - xAI Grok
+   - Alibaba Qwen (Turbo, Max)
+   - Moonshot Kimi (8K, 32K)
+
+2. **Local Providers** - No API keys required
+   - Ollama (Llama 2, Code Llama, etc.)
+   - LM Studio local models
+
+### Provider Discovery System
+
+Automatic detection of local AI services:
+
+```typescript
+class ProviderDiscovery {
+  async discoverOllama(): Promise<ModelConfig[]>;
+  async discoverLMStudio(): Promise<ModelConfig[]>;
+  async detectRunningServices(): Promise<ServiceInfo[]>;
+  async enumerateModels(service: ServiceInfo): Promise<string[]>;
+}
+```
+
+**Discovery Process:**
+
+1. Scan common ports (11434 for Ollama, 1234 for LM Studio)
+2. Query service endpoints for available models
+3. Generate provider configurations automatically
+4. Offer one-click setup in the UI
+
+### Provider Status Monitoring
+
+Real-time health and performance tracking:
+
+```typescript
+interface ProviderStatus {
+  state: "online" | "offline" | "error" | "testing";
+  lastChecked: number;
+  responseTime: number;
+  errorCount: number;
+  lastError?: string;
+}
+
+interface ProviderMetrics {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  averageResponseTime: number;
+  uptime: number;
+  lastUsed: number;
+}
+```
+
+**Monitoring Features:**
+
+- Periodic health checks (configurable interval)
+- Circuit breaker pattern for failing providers
+- Performance metrics collection
+- Error rate tracking and alerting
+- Automatic failover to backup providers
+
+### Configuration Management
+
+Secure and flexible configuration storage:
+
+```typescript
+interface ModelConfig {
+  // Basic configuration
+  id: string;
+  name: string;
+  provider: string;
+  modelName: string;
+  apiKey: string; // Stored in SecretStorage
+
+  // Provider-specific settings
+  providerSettings?: {
+    // Claude/Anthropic
+    systemPromptHandling?: "separate" | "inline";
+
+    // Gemini/Google
+    safetySettings?: SafetySettings;
+
+    // Qwen
+    chineseOptimization?: boolean;
+
+    // Kimi
+    longContextMode?: boolean;
+    maxContextLength?: number;
+  };
+
+  // Performance and cost
+  costPerToken?: number;
+  requestsPerMinute?: number;
+
+  // Capabilities
+  supportsTools: boolean;
+  supportsVision: boolean;
+  supportsStreaming: boolean;
+}
+```
+
+**Security Considerations:**
+
+1. **Credential Storage**
+   - API keys stored in VS Code SecretStorage
+   - Never persisted in plain text files
+   - Workspace-scoped isolation
+   - Automatic cleanup on provider removal
+
+2. **Network Security**
+   - SSL certificate validation
+   - Custom CA certificate support
+   - Proxy configuration support
+   - Request timeout enforcement
+
+3. **Access Control**
+   - Provider configurations per workspace
+   - Team sharing via workspace settings (excluding secrets)
+   - Import/export with credential exclusion
+
+## Core Components
 
 Manages the 4-phase spec-driven development workflow with template support:
 
@@ -184,10 +335,11 @@ class AgentEngine {
 
 ### LLMManager
 
-Unified interface for multiple AI providers:
+Enhanced unified interface for multiple AI providers with comprehensive management capabilities:
 
 ```typescript
 class LLMManager {
+  // Core generation methods
   async generate(modelId: string, messages: Message[]): Promise<LLMResponse>;
   async generateWithTools(
     modelId: string,
@@ -199,19 +351,69 @@ class LLMManager {
     messages: Message[],
     onChunk: (chunk: string) => void,
   ): Promise<void>;
+
+  // Provider management methods
+  async addProvider(config: ModelConfig): Promise<void>;
+  async updateProvider(id: string, config: Partial<ModelConfig>): Promise<void>;
+  async removeProvider(id: string): Promise<void>;
+
+  // Provider discovery and status
+  async discoverLocalProviders(): Promise<ModelConfig[]>;
+  async refreshProviderAvailability(): Promise<void>;
+  getProviderStatus(id: string): ProviderStatus;
+  async testProviderConnection(id: string): Promise<TestResult>;
+
+  // Provider selection and configuration
+  async setActiveProvider(id: string): Promise<void>;
+  getActiveProvider(): ModelConfig | undefined;
+  async setPhaseProvider(phase: string, providerId: string): Promise<void>;
+  validateConfiguration(config: ModelConfig): ValidationResult;
+
+  // Configuration management
+  async exportConfiguration(): Promise<string>;
+  async importConfiguration(config: string): Promise<void>;
+  async createFromTemplate(
+    templateId: string,
+    customConfig: Partial<ModelConfig>,
+  ): Promise<ModelConfig>;
 }
 ```
 
-**Supported Providers:**
+**Enhanced Provider Support:**
 
-- OpenAI (GPT-4, GPT-3.5)
-- Anthropic (Claude 3.x)
-- Google (Gemini)
-- xAI (Grok)
-- Ollama (local)
-- LM Studio (local)
-- Azure OpenAI
-- Custom OpenAI-compatible
+| Provider         | Setup              | Tools | Vision | Streaming | Status |
+| ---------------- | ------------------ | ----- | ------ | --------- | ------ |
+| OpenAI           | API key            | ✅    | ✅     | ✅        | ✅     |
+| Anthropic Claude | API key            | ✅    | ✅     | ✅        | ✅     |
+| Google Gemini    | API key            | ✅    | ✅     | ✅        | ✅     |
+| xAI Grok         | API key            | ✅    | ❌     | ✅        | ✅     |
+| Qwen (Alibaba)   | API key + endpoint | ✅    | ✅     | ✅        | ✅     |
+| Kimi (Moonshot)  | API key + endpoint | ✅    | ❌     | ✅        | ✅     |
+| Ollama           | Local server       | ⚠️    | ❌     | ✅        | ✅     |
+| LM Studio        | Local server       | ⚠️    | ❌     | ✅        | ✅     |
+| Azure OpenAI     | Endpoint + key     | ✅    | ✅     | ✅        | ✅     |
+| Custom           | OpenAI-compatible  | ⚠️    | ⚠️     | ⚠️        | ✅     |
+
+**Provider Templates:**
+
+The system includes pre-configured templates for easy setup:
+
+- Claude 3.5 Sonnet, Claude 3 Haiku
+- Gemini Pro with safety settings
+- Qwen Turbo and Qwen Max with Chinese optimization
+- Kimi Chat with long context support
+- GPT-4 and GPT-4 Turbo
+- xAI Grok with real-time capabilities
+- Ollama models (Llama 2, Code Llama)
+- LM Studio local configurations
+
+**Security Features:**
+
+- API keys stored in VS Code SecretStorage
+- Never logged or displayed in plain text
+- Workspace-specific provider configurations
+- SSL certificate validation for HTTPS endpoints
+- Proxy support for corporate environments
 
 ### HookEngine
 
@@ -282,7 +484,7 @@ User Input
     ↓
 SpecManager.createSpec()
     ↓
-.kiro/specs/<name>/ folder created
+.specCode/specs/<name>/ folder created
     ↓
 metadata.json saved
     ↓
@@ -346,6 +548,9 @@ Task marked complete
 │   ├── workspace.md           # Global project memory
 │   └── specs/                 # Per-spec memory files
 ├── sessions/                  # Session history files
+├── providers/                 # Provider configurations (NEW)
+│   ├── templates/             # Custom provider templates
+│   └── settings.json          # Provider preferences
 ├── mcp.json                   # MCP configurations
 └── settings/                  # Extension settings
 ```
@@ -373,7 +578,12 @@ Task marked complete
     "costEstimate": 0.05,
     "templateId": "rest-api",
     "tags": ["backend", "api"],
-    "lastSessionId": "session-uuid"
+    "lastSessionId": "session-uuid",
+    "phaseProviders": {
+      "requirements": "claude-sonnet",
+      "design": "gpt-4-turbo",
+      "execution": "claude-sonnet"
+    }
   }
 }
 ```
@@ -382,9 +592,42 @@ Task marked complete
 
 ### Adding a New LLM Provider
 
-1. Update `ModelConfig.provider` type
-2. Add client initialization in `LLMManager.initializeClient()`
-3. Implement generation method in `LLMManager.generate()`
+1. Add provider type to `ModelConfig.provider` union type
+2. Create provider template in `providerTemplates.ts`
+3. Add client initialization in `LLMManager.initializeClient()`
+4. Implement generation method in `LLMManager.generate()`
+5. Add provider-specific settings to `ModelConfig.providerSettings`
+6. Update provider discovery logic if applicable
+
+### Adding a New Provider Template
+
+1. Define template in `providerTemplates.ts`:
+
+```typescript
+{
+  id: "new-provider",
+  name: "New Provider",
+  provider: "custom",
+  description: "Description of the provider",
+  defaultSettings: {
+    modelName: "model-name",
+    baseUrl: "https://api.provider.com/v1",
+    // ... other defaults
+  },
+  requiredFields: ["apiKey"],
+  helpText: "Setup instructions",
+  documentationUrl: "https://docs.provider.com",
+  setupInstructions: [
+    "Step 1: Visit provider website",
+    "Step 2: Create account",
+    // ... more steps
+  ]
+}
+```
+
+2. Add provider-specific configuration handling
+3. Update UI to display new template
+4. Add validation logic for provider-specific fields
 
 ### Adding a New Tool
 

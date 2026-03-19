@@ -155,7 +155,7 @@ export class MCPClient {
     async executeTool(toolName: string, args: any): Promise<string> {
         // Find which server has this tool
         for (const server of this.servers.values()) {
-            if (server.status !== 'connected') continue;
+            if (server.status !== 'connected') {continue;}
             
             const prefix = `${server.name}_`;
             if (toolName.startsWith(prefix)) {

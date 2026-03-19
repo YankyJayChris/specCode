@@ -78,9 +78,9 @@ export class SpecTreeItem extends vscode.TreeItem {
   }
 
   private getContextValue(spec: Spec): string {
-    if (spec.files.tasks) return "specWithTasks";
-    if (spec.files.design) return "specWithDesign";
-    if (spec.files.requirements) return "specWithRequirements";
+    if (spec.files.tasks) {return "specWithTasks";}
+    if (spec.files.design) {return "specWithDesign";}
+    if (spec.files.requirements) {return "specWithRequirements";}
     return "spec";
   }
 

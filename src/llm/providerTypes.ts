@@ -21,6 +21,24 @@ export interface ValidationResult {
   warnings: string[];
 }
 
+export interface ProviderError {
+  type: "configuration" | "connection" | "provider" | "system";
+  code: string;
+  message: string;
+  details?: any;
+  timestamp: number;
+  providerId?: string;
+  retryable: boolean;
+  userMessage: string;
+}
+
+export interface CircuitBreakerState {
+  state: "closed" | "open" | "half-open";
+  failureCount: number;
+  lastFailureTime: number;
+  nextAttemptTime: number;
+}
+
 export interface ProviderTemplate {
   id: string;
   name: string;

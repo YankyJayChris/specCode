@@ -1,7 +1,7 @@
 {
   "name": "spec-code",
-  "displayName": "Spec-Code: Kiro-Compatible Spec-Driven AI Development",
-  "description": "Bring Kiro's agentic IDE capabilities to any VS Code installation. Spec-driven development with any AI model.",
+  "displayName": "Spec-Code: SpecCode-Compatible Spec-Driven AI Development",
+  "description": "Bring SpecCode's agentic IDE capabilities to any VS Code installation. Spec-driven development with any AI model.",
   "version": "1.0.0",
   "publisher": "spec-code",
   "license": "MIT",
@@ -17,7 +17,7 @@
   "keywords": [
     "ai",
     "agent",
-    "kiro",
+    "specCode",
     "spec-driven",
     "claude",
     "openai",
@@ -172,6 +172,11 @@
         "icon": "$(gear)"
       },
       {
+        "command": "specCode.openProviderSetup",
+        "title": "Open Provider Setup",
+        "icon": "$(settings-gear)"
+      },
+      {
         "command": "specCode.addModel",
         "title": "Add AI Model",
         "icon": "$(add)"
@@ -245,6 +250,66 @@
         "command": "specCode.resumeSession",
         "title": "Resume Session",
         "icon": "$(play)"
+      },
+      {
+        "command": "specCode.addProvider",
+        "title": "Add Provider",
+        "icon": "$(add)"
+      },
+      {
+        "command": "specCode.editProvider",
+        "title": "Edit Provider",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "specCode.removeProvider",
+        "title": "Remove Provider",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "specCode.switchProvider",
+        "title": "Switch Provider",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "specCode.testProvider",
+        "title": "Test Provider Connection",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "specCode.discoverProviders",
+        "title": "Discover Local Providers",
+        "icon": "$(search)"
+      },
+      {
+        "command": "specCode.importProviderConfig",
+        "title": "Import Provider Configuration",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "specCode.exportProviderConfig",
+        "title": "Export Provider Configuration",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "specCode.clearCredentials",
+        "title": "Clear All API Keys",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "specCode.activateProvider",
+        "title": "Activate Provider",
+        "icon": "$(check)"
+      },
+      {
+        "command": "specCode.setPhaseProvider",
+        "title": "Set Phase Provider",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "specCode.refreshProviderStatus",
+        "title": "Refresh Provider Status",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -259,34 +324,54 @@
     "views": {
       "specCode": [
         {
+          "id": "specCode.chat",
+          "name": "Chat",
+          "type": "webview",
+          "when": "workspaceHasSpecCodeFolder || true",
+          "icon": "$(comment-discussion)"
+        },
+        {
+          "id": "specCode.providerSetup",
+          "name": "Provider Setup",
+          "type": "webview",
+          "when": "workspaceHasSpecCodeFolder || true",
+          "icon": "$(settings-gear)"
+        },
+        {
+          "id": "specCode.providerSwitcher",
+          "name": "Provider Switcher",
+          "icon": "$(arrow-swap)",
+          "when": "workspaceHasSpecCodeFolder || true"
+        },
+        {
           "id": "specCode.specs",
           "name": "Specs",
           "icon": "$(file-text)",
-          "when": "workspaceHasKiroFolder || true"
+          "when": "workspaceHasSpecCodeFolder || true"
         },
         {
           "id": "specCode.hooks",
           "name": "Agent Hooks",
           "icon": "$(debug-disconnect)",
-          "when": "workspaceHasKiroFolder || true"
+          "when": "workspaceHasSpecCodeFolder || true"
         },
         {
           "id": "specCode.steering",
           "name": "Agent Steering",
           "icon": "$(compass)",
-          "when": "workspaceHasKiroFolder || true"
+          "when": "workspaceHasSpecCodeFolder || true"
         },
         {
           "id": "specCode.sessions",
           "name": "Sessions",
           "icon": "$(history)",
-          "when": "workspaceHasKiroFolder || true"
+          "when": "workspaceHasSpecCodeFolder || true"
         },
         {
           "id": "specCode.mcp",
           "name": "MCP Servers",
           "icon": "$(server)",
-          "when": "workspaceHasKiroFolder || true"
+          "when": "workspaceHasSpecCodeFolder || true"
         }
       ]
     },
@@ -310,6 +395,10 @@
       {
         "view": "specCode.mcp",
         "contents": "No MCP servers. [Add Server](command:specCode.addMCPServer)"
+      },
+      {
+        "view": "specCode.providerSwitcher",
+        "contents": "No providers configured. [Add Provider](command:specCode.addProvider)"
       }
     ],
     "menus": {
@@ -343,6 +432,23 @@
           "command": "specCode.refreshMCP",
           "when": "view == specCode.mcp",
           "group": "navigation"
+        },
+        {
+          "command": "specCode.refreshProviderStatus",
+          "when": "view == specCode.providerSwitcher",
+          "group": "navigation"
+        },
+        {
+          "command": "specCode.addProvider",
+          "when": "view == specCode.providerSwitcher",
+          "group": "navigation",
+          "icon": "$(add)"
+        },
+        {
+          "command": "specCode.discoverProviders",
+          "when": "view == specCode.providerSwitcher",
+          "group": "navigation",
+          "icon": "$(search)"
         }
       ],
       "view/item/context": [
@@ -405,6 +511,21 @@
           "command": "specCode.removeMCPServer",
           "when": "view == specCode.mcp && viewItem == mcpServer",
           "group": "inline"
+        },
+        {
+          "command": "specCode.testProvider",
+          "when": "view == specCode.providerSwitcher && viewItem == providerInList",
+          "group": "inline"
+        },
+        {
+          "command": "specCode.editProvider",
+          "when": "view == specCode.providerSwitcher && (viewItem == providerInList || viewItem == activeProviderInList)",
+          "group": "1_actions"
+        },
+        {
+          "command": "specCode.removeProvider",
+          "when": "view == specCode.providerSwitcher && (viewItem == providerInList || viewItem == activeProviderInList)",
+          "group": "1_actions"
         }
       ],
       "commandPalette": [
@@ -414,6 +535,10 @@
         },
         {
           "command": "specCode.openSettings",
+          "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.openProviderSetup",
           "group": "Spec-Code"
         },
         {
@@ -443,6 +568,42 @@
         {
           "command": "specCode.viewMemory",
           "group": "Spec-Code"
+        },
+        {
+          "command": "specCode.addProvider",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.switchProvider",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.testProvider",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.discoverProviders",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.importProviderConfig",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.exportProviderConfig",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.activateProvider",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.setPhaseProvider",
+          "group": "Spec-Code Providers"
+        },
+        {
+          "command": "specCode.refreshProviderStatus",
+          "group": "Spec-Code Providers"
         }
       ],
       "editor/context": [
@@ -508,6 +669,26 @@
         "key": "ctrl+shift+t",
         "mac": "cmd+shift+t",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "specCode.switchProvider",
+        "key": "ctrl+shift+p",
+        "mac": "cmd+shift+p"
+      },
+      {
+        "command": "specCode.addProvider",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p"
+      },
+      {
+        "command": "specCode.testProvider",
+        "key": "ctrl+shift+alt+t",
+        "mac": "cmd+shift+alt+t"
+      },
+      {
+        "command": "specCode.discoverProviders",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d"
       }
     ],
     "configuration": {
@@ -612,8 +793,33 @@
         },
         "specCode.globalSteeringPath": {
           "type": "string",
-          "default": "~/.kiro/steering",
+          "default": "~/.specCode/steering",
           "description": "Path to global steering documents"
+        },
+        "specCode.activeProvider": {
+          "type": "string",
+          "default": "",
+          "description": "Currently active provider ID"
+        },
+        "specCode.phaseProviders": {
+          "type": "object",
+          "default": {
+            "requirements": "",
+            "design": "",
+            "execution": "",
+            "hooks": ""
+          },
+          "description": "Provider IDs for each workflow phase"
+        },
+        "specCode.providerSettings": {
+          "type": "object",
+          "default": {
+            "autoDiscovery": true,
+            "healthCheckInterval": 300000,
+            "circuitBreakerThreshold": 5,
+            "defaultTimeout": 30000
+          },
+          "description": "Provider management settings"
         }
       }
     },
@@ -636,6 +842,7 @@
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",

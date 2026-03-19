@@ -56,7 +56,7 @@ spec-code/
 │   ├── mcp/                  # MCP client
 │   │   └── mcpClient.ts
 │   ├── utils/                # Utilities
-│   │   └── kiroFolder.ts
+│   │   └── specCodeFolder.ts
 │   └── webview/              # Webview UI
 │       └── chatWebview.ts
 ├── package.json              # Extension manifest
@@ -200,8 +200,8 @@ Include:
 
 ## Questions?
 
-- Join our [Discord](https://discord.gg/spec-code)
-- Open a [GitHub Discussion](https://github.com/yourusername/spec-code/discussions)
+- Join our [Discord](https://discord.gg/specCode)
+- Open a [GitHub Discussion](https://github.com/yourusername/specCode/discussions)
 
 ## License
 

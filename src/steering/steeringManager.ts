@@ -3,7 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import { v4 as uuidv4 } from "uuid";
-import { KiroFolderManager } from "../utils/kiroFolder";
+import { SpecCodeFolderManager } from "../utils/specCodeFolder";
 
 export interface SteeringDocument {
   id: string;
@@ -126,17 +126,17 @@ This document guides the AI agent's behavior when generating code and making dec
 export class SteeringManager {
   private steeringDocs: Map<string, SteeringDocument> = new Map();
 
-  constructor(private kiroFolder: KiroFolderManager) {
+  constructor(private specCodeFolder: SpecCodeFolderManager) {
     this.loadSteeringDocuments();
   }
 
   private async loadSteeringDocuments() {
     // Load workspace steering
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
     if (workspaceRoot) {
       const workspaceSteeringPath = path.join(
         workspaceRoot,
-        KiroFolderManager.FOLDER_NAME,
+        SpecCodeFolderManager.FOLDER_NAME,
         "steering",
       );
       if (fs.existsSync(workspaceSteeringPath)) {
@@ -162,7 +162,7 @@ export class SteeringManager {
     const config = vscode.workspace.getConfiguration("specCode");
     const customPath = config.get<string>(
       "globalSteeringPath",
-      "~/.kiro/steering",
+      "~/.specCode/steering",
     );
 
     if (customPath.startsWith("~")) {
@@ -207,11 +207,11 @@ export class SteeringManager {
     let dirPath: string;
 
     if (scope === "workspace") {
-      const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
+      const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
       if (!workspaceRoot) {
         throw new Error("No workspace open");
       }
-      dirPath = path.join(workspaceRoot, ".kiro", "steering");
+      dirPath = path.join(workspaceRoot, ".specCode", "steering");
     } else {
       dirPath = this.getGlobalSteeringPath();
     }
@@ -244,7 +244,9 @@ export class SteeringManager {
 
   async updateSteeringDocument(id: string, content: string): Promise<void> {
     const doc = this.steeringDocs.get(id);
-    if (!doc) throw new Error("Steering document not found");
+    if (!doc) {
+      throw new Error("Steering document not found");
+    }
 
     doc.content = content;
     fs.writeFileSync(doc.path, content);
@@ -252,7 +254,9 @@ export class SteeringManager {
 
   async deleteSteeringDocument(id: string): Promise<void> {
     const doc = this.steeringDocs.get(id);
-    if (!doc) return;
+    if (!doc) {
+      return;
+    }
 
     if (fs.existsSync(doc.path)) {
       fs.unlinkSync(doc.path);
@@ -306,8 +310,10 @@ export class SteeringManager {
 
   // Check for AGENTS.md compatibility
   async checkForAgentsMd(): Promise<string | null> {
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
-    if (!workspaceRoot) return null;
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
+    if (!workspaceRoot) {
+      return null;
+    }
 
     const agentsMdPath = path.join(workspaceRoot, "AGENTS.md");
     if (fs.existsSync(agentsMdPath)) {
@@ -320,14 +326,18 @@ export class SteeringManager {
   // Import from AGENTS.md
   async importFromAgentsMd(): Promise<void> {
     const content = await this.checkForAgentsMd();
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
-    const workspaceRoot = this.kiroFolder.getWorkspaceRoot();
-    if (!workspaceRoot) return;
+    const workspaceRoot = this.specCodeFolder.getWorkspaceRoot();
+    if (!workspaceRoot) {
+      return;
+    }
 
     const steeringPath = path.join(
       workspaceRoot,
-      KiroFolderManager.FOLDER_NAME,
+      SpecCodeFolderManager.FOLDER_NAME,
       "steering",
       "AGENTS.md",
     );

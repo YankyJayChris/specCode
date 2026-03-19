@@ -376,7 +376,7 @@ Available MCP servers:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/specCode.git
+git clone https://github.com/YankyJayChris/specCode.git
 cd specCode
 
 # Install dependencies
@@ -433,8 +433,8 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/specCode/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/specCode/discussions)
+- **Issues**: [GitHub Issues](https://github.com/YankyJayChris/specCode/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/YankyJayChris/specCode/discussions)
 - **Discord**: [Join our community](https://discord.gg/specCode)
 
 ---

@@ -1,9 +1,9 @@
-# Kiro: Spec-Driven AI Development for VS Code
+# SpecCode: Spec-Driven AI Development for VS Code
 
 [![VS Code Version](https://img.shields.io/badge/VS%20Code-1.85%2B-blue)](https://code.visualstudio.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Kiro** brings the full power of agentic IDE capabilities to any standard VS Code installation (including VSCodium). Experience spec-driven AI development with complete model freedom—use OpenAI, Anthropic Claude, Google Gemini, xAI Grok, Alibaba Qwen, Moonshot Kimi, Ollama, LM Studio, or any OpenAI-compatible endpoint.
+**SpecCode** brings the full power of agentic IDE capabilities to any standard VS Code installation (including VSCodium). Experience spec-driven AI development with complete model freedom—use OpenAI, Anthropic Claude, Google Gemini, xAI Grok, Alibaba Qwen, Moonshot Kimi, Ollama, LM Studio, or any OpenAI-compatible endpoint.
 
 ## 🎯 What is Spec-Driven Development?
 
@@ -44,7 +44,7 @@ The result? Production-ready, verifiable code with human-readable specs for stak
 - **Chat Webview**: Interactive AI chat with real-time updates and provider switching
 - **Memory System**: Workspace and per-spec memory persistence
 - **Session Management**: Track conversations, tokens, and costs per task
-- **File Explorer Integration**: `.kiro/` folder with automatic migration from `.specCode/`
+- **File Explorer Integration**: `.specCode/` folder with automatic migration from `.specCode/`
 - **Command Palette**: All commands accessible via `Ctrl+Shift+P`
 - **Keyboard Shortcuts**: `Ctrl+Shift+K` to open chat
 - **Editor Context Menus**: Right-click for "Ask About Selection", "Generate Tests", etc.
@@ -56,12 +56,12 @@ The result? Production-ready, verifiable code with human-readable specs for stak
 1. Install from the VS Code Marketplace (coming soon)
 2. Or install from VSIX:
    ```bash
-   code --install-extension kiro-1.0.0.vsix
+   code --install-extension specCode-1.0.0.vsix
    ```
 
 ### Setup Your First Provider
 
-1. **Open the Kiro panel**: Click the ghost icon in the activity bar
+1. **Open the SpecCode panel**: Click the ghost icon in the activity bar
 2. **Add your AI provider**: Click "Provider Setup" to open the configuration interface
 3. **Choose a template**: Select from 14+ pre-configured provider templates
 4. **Enter credentials**: Add your API key (stored securely in VS Code)
@@ -107,16 +107,16 @@ Features: Tools ✅ Vision ✅ Fast ✅
 ```
 You: "Create a user authentication system with login, signup, and password reset"
 
-Kiro: [Generates requirements.md with EARS user stories]
+SpecCode: [Generates requirements.md with EARS user stories]
 You: [Review and approve]
 
-Kiro: [Generates design.md with architecture and API specs]
+SpecCode: [Generates design.md with architecture and API specs]
 You: [Review and approve]
 
-Kiro: [Generates tasks.md with implementation plan]
+SpecCode: [Generates tasks.md with implementation plan]
 You: [Click Execute]
 
-Kiro: [Executes tasks, asks for command approval]
+SpecCode: [Executes tasks, asks for command approval]
 ```
 
 ## ⚙️ Provider Configuration
@@ -159,7 +159,7 @@ Choose from 14+ pre-configured templates:
 
 ### Provider Setup Interface
 
-Access via the "Provider Setup" button in the Kiro sidebar:
+Access via the "Provider Setup" button in the SpecCode sidebar:
 
 **Features:**
 
@@ -177,7 +177,7 @@ Configure providers programmatically via VS Code settings:
 
 ```json
 {
-  "kiro.providers": [
+  "specCode.providers": [
     {
       "id": "claude-sonnet",
       "name": "Claude 3.5 Sonnet",
@@ -194,8 +194,8 @@ Configure providers programmatically via VS Code settings:
       }
     }
   ],
-  "kiro.activeProvider": "claude-sonnet",
-  "kiro.phaseProviders": {
+  "specCode.activeProvider": "claude-sonnet",
+  "specCode.phaseProviders": {
     "requirements": "claude-sonnet",
     "design": "gpt-4-turbo",
     "execution": "claude-sonnet"
@@ -264,12 +264,12 @@ Configure providers programmatically via VS Code settings:
 **Getting Help:**
 
 - Use the "Test Connection" feature in Provider Setup
-- Check the "Kiro" output channel for detailed error logs
+- Check the "SpecCode" output channel for detailed error logs
 - Review provider documentation links in templates
 
 ### Agent Steering
 
-Create `.kiro/steering/` markdown files to guide AI behavior:
+Create `.specCode/steering/` markdown files to guide AI behavior:
 
 ```markdown
 ## Coding Style
@@ -329,7 +329,7 @@ Available MCP servers:
 ## 📁 Folder Structure
 
 ```
-.kiro/
+.specCode/
 ├── specs/
 │   └── feature-name/
 │       ├── requirements.md    # EARS requirements
@@ -363,7 +363,7 @@ Available MCP servers:
 
 ```json
 {
-  "kiro.trustedCommandPatterns": [
+  "specCode.trustedCommandPatterns": [
     "^npm (install|run|test)",
     "^git (add|commit|push)"
   ]
@@ -376,8 +376,8 @@ Available MCP servers:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/kiro.git
-cd kiro
+git clone https://github.com/yourusername/specCode.git
+cd specCode
 
 # Install dependencies
 npm install
@@ -427,16 +427,16 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 
 ## 🙏 Acknowledgments
 
-- Inspired by [Kiro](https://kiro.dev) and their spec-driven development approach
+- Inspired by [SpecCode](https://specCode.dev) and their spec-driven development approach
 - Built on the [VS Code Extension API](https://code.visualstudio.com/api)
 - Uses the [Model Context Protocol](https://modelcontextprotocol.io) by Anthropic
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/kiro/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/kiro/discussions)
-- **Discord**: [Join our community](https://discord.gg/kiro)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/specCode/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/specCode/discussions)
+- **Discord**: [Join our community](https://discord.gg/specCode)
 
 ---
 
-**Happy coding with Kiro!** 🚀
+**Happy coding with SpecCode!** 🚀
